@@ -1,0 +1,9 @@
+#!/bin/sh
+# Runs ./gradlew with every download kept inside this folder (.tools/).
+# Remove .tools/ to delete everything the project has downloaded.
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+export GRADLE_USER_HOME="$ROOT/.tools/gradle-home"
+export ANDROID_USER_HOME="$ROOT/.tools/android-user-home"
+export ANDROID_HOME="$ROOT/.tools/android-sdk"
+export JAVA_HOME="${LEXA_JAVA_HOME:-$(/usr/libexec/java_home -v 21)}"
+exec "$ROOT/gradlew" "$@"
