@@ -63,11 +63,11 @@ roborazzi {
 
 // Robolectric gets its android-all jar through Gradle (cached in .tools/gradle-home) and runs offline,
 // so nothing is downloaded into ~/.m2 (docs/ARCHITECTURE.md §18).
-val robolectricRuntime: Configuration by configurations.creating {
+val robolectricRuntime: Configuration = configurations.create("robolectricRuntime") {
     isTransitive = false
 }
 val robolectricJarsDir = rootProject.layout.projectDirectory.dir(".tools/robolectric")
-val syncRobolectricJars by tasks.registering(Sync::class) {
+val syncRobolectricJars = tasks.register<Sync>("syncRobolectricJars") {
     from(robolectricRuntime)
     into(robolectricJarsDir)
 }
@@ -76,8 +76,14 @@ tasks.withType<Test>().configureEach {
     dependsOn(syncRobolectricJars)
     maxParallelForks = 1
     maxHeapSize = "1536m"
+    // Robolectric's SDK 36 runtime touches FileDescriptor internals.
+    jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED", "--add-opens=java.base/java.io=ALL-UNNAMED")
     systemProperty("robolectric.offline", "true")
     systemProperty("robolectric.dependency.dir", robolectricJarsDir.asFile.absolutePath)
+    // Robolectric's native graphics runtime unpacks into the temp dir: keep it inside build/.
+    val tmp = layout.buildDirectory.dir("tmp/robolectric").get().asFile
+    doFirst { tmp.mkdirs() }
+    systemProperty("java.io.tmpdir", tmp.absolutePath)
 }
 
 dependencies {

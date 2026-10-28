@@ -16,8 +16,8 @@
 
     <!-- Training -->
     <string name="training_due_title">Повторить сегодня</string>
-    <string name="training_empty">Пока пусто. Переведи первое слово – оно появится здесь</string>
-    <string name="training_done_today">На сегодня всё. Следующие слова вернутся по расписанию – загляни завтра</string>
+    <string name="training_empty">Пока пусто. Переведи первое слово&#160;– оно появится здесь</string>
+    <string name="training_done_today">На сегодня всё. Следующие слова вернутся по расписанию&#160;– загляни завтра</string>
     <string name="training_start">Начать повторение</string>
     <string name="training_summary">Выучено %1$s · Серия %2$s</string>
 
@@ -26,7 +26,7 @@
     <string name="translator_hint">Слово или короткая фраза</string>
     <string name="translator_input_label">Слово для перевода</string>
     <string name="translator_action">Перевести</string>
-    <string name="translator_empty">Вставь незнакомое слово – Lexa покажет перевод, транскрипцию и примеры и сразу добавит его в «Новые слова»</string>
+    <string name="translator_empty">Вставь незнакомое слово&#160;– Lexa покажет перевод, транскрипцию и примеры и сразу добавит его в «Новые слова»</string>
     <string name="translator_recent">Недавние</string>
 
     <!-- Words -->
@@ -34,9 +34,9 @@
     <string name="words_tab_new">Новые</string>
     <string name="words_tab_favorites">Избранное</string>
     <string name="words_tab_learned">Выученные</string>
-    <string name="words_empty_new">Пока пусто. Переведи первое слово – оно появится здесь</string>
+    <string name="words_empty_new">Пока пусто. Переведи первое слово&#160;– оно появится здесь</string>
     <string name="words_empty_favorites">Здесь будут любимые слова. Отметь слово звёздочкой в переводчике или в карточке слова</string>
-    <string name="words_empty_learned">Выученных слов пока нет. Слово попадает сюда после верного ответа в пятой коробке – первое появится примерно через месяц повторений</string>
+    <string name="words_empty_learned">Выученных слов пока нет. Слово попадает сюда после верного ответа в пятой коробке&#160;– первое появится примерно через месяц повторений</string>
     <string name="words_favorite">В избранном</string>
 
     <!-- Stats -->
@@ -53,34 +53,33 @@
     <string name="stats_chart_description">Выучено по дням за последние 30 дней, всего %1$s</string>
     <string name="stats_chart_empty">За 30 дней ни одного выученного слова. Слово считается выученным после пятой коробки</string>
     <string name="stats_streak_title">Серия</string>
-    <string name="stats_streak_best">Лучшая серия – %1$s</string>
+    <string name="stats_streak_best">Лучшая серия&#160;– %1$s</string>
     <string name="stats_accuracy_title">Точность ответов</string>
     <string name="stats_accuracy_week">за неделю</string>
     <string name="stats_accuracy_all">за всё время</string>
     <string name="stats_accuracy_undefined">–</string>
     <string name="stats_accuracy_percent">%1$d %%</string>
-    <string name="stats_accuracy_none">Ответов пока нет – точность появится после первой тренировки</string>
+    <string name="stats_accuracy_none">Ответов пока нет&#160;– точность появится после первой тренировки</string>
     <string name="stats_hard_title">Трудные слова</string>
     <string name="stats_hard_empty">Ошибок пока нет. Слова, в которых ошибаешься, соберутся здесь</string>
     <string name="stats_boxes_title">Слова по коробкам</string>
-    <string name="stats_boxes_description">Коробка %1$d – %2$d</string>
+    <string name="stats_boxes_description">Коробка %1$d&#160;– %2$d</string>
 
     <!-- Settings -->
     <string name="settings_title">Настройки</string>
     <string name="settings_direction_title">Что показывать на карточке</string>
-    <string name="settings_direction_en_ru">Английское слово – вписываю перевод</string>
-    <string name="settings_direction_ru_en">Русский перевод – вписываю слово</string>
+    <string name="settings_direction_en_ru">Английское слово&#160;– вписываю перевод</string>
+    <string name="settings_direction_ru_en">Русский перевод&#160;– вписываю слово</string>
     <string name="settings_reminder_title">Напоминание о повторении</string>
     <string name="settings_reminder_value">Каждый день в %1$s</string>
     <string name="settings_reminder_unavailable">Пока не работает: напоминания появятся в следующем обновлении</string>
 
     <!-- History -->
     <string name="history_title">История</string>
-    <string name="history_empty">Пока пусто. Переведи первое слово – оно появится здесь</string>
+    <string name="history_empty">Пока пусто. Переведи первое слово&#160;– оно появится здесь</string>
 
     <!-- Word card -->
-    <string name="word_missing">Этого слова больше нет в списках. Возможно, его удалили – переведи его заново, и оно вернётся в «Новые слова»</string>
-    <string name="word_box">Коробка %1$d из 5</string>
+    <string name="word_missing">Этого слова больше нет в списках. Возможно, его удалили&#160;– переведи его заново, и оно вернётся в «Новые слова»</string>
     <string name="word_learned">Выучено</string>
     <string name="word_boxes_description">Коробка %1$d из 5</string>
 
