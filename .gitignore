@@ -1,3 +1,5 @@
+# Everything the project downloads lives here (Gradle home, SDK, fonts source, Robolectric jars)
+.tools/
 .gradle/
 build/
 */build/
