@@ -5,5 +5,13 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 export GRADLE_USER_HOME="$ROOT/.tools/gradle-home"
 export ANDROID_USER_HOME="$ROOT/.tools/android-user-home"
 export ANDROID_HOME="$ROOT/.tools/android-sdk"
-export JAVA_HOME="${LEXA_JAVA_HOME:-$(/usr/libexec/java_home -v 21)}"
+# JDK 21: Temurin in .tools/jdk-21 if present. GraalVM 21's jlink cannot build the Android JDK image
+# (AGP JdkImageTransform fails with "Module jdk.internal.vm.ci not found"), so it is only a fallback.
+if [ -n "$LEXA_JAVA_HOME" ]; then
+  export JAVA_HOME="$LEXA_JAVA_HOME"
+elif [ -x "$ROOT/.tools/jdk-21/Contents/Home/bin/java" ]; then
+  export JAVA_HOME="$ROOT/.tools/jdk-21/Contents/Home"
+else
+  export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
+fi
 exec "$ROOT/gradlew" "$@"

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Outline icon, 1.5 stroke on a 24 grid (weight ~300). Tinted by the theme at the call site. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp" android:height="20dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#00000000" android:strokeColor="#FF000000" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M3.5,5.5h9M8,3.5v2M5.5,5.5c0.8,3.2 3,5.6 6.2,7M10.5,5.5c-0.8,3.4 -3.2,6.2 -6.5,7.5"/>
+    <path android:fillColor="#00000000" android:strokeColor="#FF000000" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M12.5,20.5l4,-9.5l4,9.5M13.9,17.25h5.2"/>
+</vector>

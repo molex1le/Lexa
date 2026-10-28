@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A marker stroke with slanted ends under a lowercase "l": the app's one accent on paper. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="@color/marker" android:pathData="M38,58h36l-4,14h-36z"/>
+    <path android:fillColor="@color/launcher_ink" android:pathData="M50,34h7v38h-7z"/>
+</vector>
