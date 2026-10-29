@@ -20,7 +20,9 @@ import app.lexa.ui.history.HistoryRoute as HistoryScreenRoute
 import app.lexa.ui.home.HomeRoute as HomeScreenRoute
 import app.lexa.ui.lists.ListsRoute as ListsScreenRoute
 import app.lexa.ui.settings.SettingsRoute as SettingsScreenRoute
+import app.lexa.ui.stats.StatsActions
 import app.lexa.ui.stats.StatsRoute as StatsScreenRoute
+import app.lexa.ui.home.HomeViewModel
 import app.lexa.ui.theme.LexaTheme
 import app.lexa.ui.translator.TranslatorRoute as TranslatorScreenRoute
 import app.lexa.ui.translator.TranslatorViewModel
@@ -83,8 +85,30 @@ fun LexaNavHost(navController: NavHostController = rememberNavController()) {
                     onTranslate = { navController.navigateTopLevel(TopLevel.TRANSLATOR) },
                 )
             }
-            composable<StatsRoute> { StatsScreenRoute() }
-            composable<WordRoute> { WordScreenRoute(onBack = navController::popBackStack) }
+            composable<StatsRoute> {
+                StatsScreenRoute(
+                    StatsActions(
+                        onOpenWord = { navController.navigate(WordRoute(it)) },
+                        onPracticeHard = {
+                            // Home is the start destination, so it is always on the back stack under the tabs.
+                            navController.getBackStackEntry<HomeRoute>().savedStateHandle[HomeViewModel.START_PRACTICE] = true
+                            navController.navigateTopLevel(TopLevel.TRAINING)
+                        },
+                        onOpenLearned = {
+                            navController.navigate(ListsRoute(ListTab.LEARNED)) {
+                                popUpTo(navController.graph.findStartDestination().id)
+                                launchSingleTop = true
+                            }
+                        },
+                    ),
+                )
+            }
+            composable<WordRoute> {
+                WordScreenRoute(
+                    onBack = navController::popBackStack,
+                    onTranslateQuery = { navController.navigate(TranslatorRoute(it)) },
+                )
+            }
             composable<HistoryRoute> {
                 HistoryScreenRoute(
                     onBack = navController::popBackStack,

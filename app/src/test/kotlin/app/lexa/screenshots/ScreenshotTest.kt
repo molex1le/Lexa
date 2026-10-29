@@ -27,6 +27,12 @@ import app.lexa.domain.model.ExampleOrigin
 import app.lexa.domain.model.PartOfSpeech
 import app.lexa.domain.model.Sense
 import app.lexa.domain.model.Translation
+import app.lexa.domain.model.AnswerTotals
+import app.lexa.domain.model.WordCounts
+import app.lexa.domain.model.WordDetails
+import app.lexa.domain.model.WordSummary
+import java.time.LocalDate
+import java.time.ZoneOffset
 import app.lexa.domain.repository.LookupError
 import org.junit.Assume.assumeFalse
 import app.lexa.ui.word.WordScreen
@@ -55,6 +61,61 @@ private val SampleCommute = Translation(
         Example("I commute from Brooklyn to Manhattan by bicycle.", "Я езжу из Бруклина на Манхэттен на велосипеде.", ExampleOrigin.MACHINE),
     ),
     synonyms = listOf("travel", "journey", "shuttle"),
+)
+
+private fun day(date: String): Long = LocalDate.parse(date).atTime(12, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
+
+private fun sampleWord(
+    id: Long,
+    term: String,
+    translation: String,
+    box: Int = 1,
+    mistakes: Int = 0,
+    added: String,
+    favorite: Boolean = false,
+    learned: String? = null,
+    reviewed: Boolean = true,
+) = WordSummary(
+    id = id, term = term, translation = translation, isFavorite = favorite, box = box, mistakesCount = mistakes,
+    addedAt = day(added), learnedAt = learned?.let(::day), lastReviewedAt = if (reviewed) day(added) else null,
+)
+
+/** Nine words: 3 new (box 1), 3 in learning (boxes 2–4), 3 learned. Boxes sum to 6, learned list has 3. */
+private val SampleNew = listOf(
+    sampleWord(1, "squander", "растрачивать, транжирить", added = "2026-10-29", reviewed = false),
+    sampleWord(2, "commute", "ездить на работу, поездка на работу", added = "2026-10-28", reviewed = false),
+    sampleWord(4, "reluctant", "неохотный, вынужденный", mistakes = 4, added = "2026-10-20"),
+    sampleWord(5, "thorough", "тщательный, основательный", box = 2, mistakes = 2, added = "2026-10-18", favorite = true),
+    sampleWord(6, "wander", "бродить, странствовать", box = 3, mistakes = 1, added = "2026-10-12"),
+    sampleWord(7, "eager", "стремящийся, жаждущий", box = 4, added = "2026-10-05", favorite = true),
+)
+private val SampleLearned = listOf(
+    sampleWord(8, "abundant", "обильный, изобилующий", added = "2026-09-20", learned = "2026-10-29"),
+    sampleWord(9, "sincere", "искренний", added = "2026-09-08", learned = "2026-10-14", favorite = true),
+    sampleWord(10, "borrow", "одалживать, занимать", added = "2026-08-30", learned = "2026-10-02"),
+)
+private val SampleLists = ListsUiState(
+    tab = ListTab.NEW,
+    isLoading = false,
+    newWords = SampleNew,
+    favorites = (SampleNew + SampleLearned).filter { it.isFavorite },
+    learned = SampleLearned,
+)
+
+/** 30 days ending 29.10: sincere on 14.10 (index 14), borrow on 2.10 (index 2), abundant today. */
+private val SampleStats = StatsUiState(
+    counts = WordCounts(learned = 3, learning = 3, new = 3),
+    learnedToday = 1,
+    learnedWeek = 1,
+    learnedMonth = 3,
+    learnedByDay = List(30) { i -> if (i == 2 || i == 14 || i == 29) 1 else 0 },
+    streak = 4,
+    bestStreak = 9,
+    weekAnswers = AnswerTotals(answers = 18, correct = 14),
+    allAnswers = AnswerTotals(answers = 64, correct = 49),
+    hardWords = SampleNew.filter { it.mistakesCount > 0 }.sortedByDescending { it.mistakesCount },
+    boxes = listOf(3, 1, 1, 1, 0),
+    learnedWords = SampleLearned,
 )
 
 /**
@@ -152,19 +213,19 @@ class ScreenshotTest(private val dark: Boolean) {
     }
 
     @Test fun wordsNew() = snap("words_new") {
-        WithBar(TopLevel.WORDS) { ListsScreen(ListsUiState(ListTab.NEW, isLoading = false), {}, {}, {}, it) }
+        WithBar(TopLevel.WORDS) { ListsScreen(ListsUiState(ListTab.NEW, isLoading = false), modifier = it) }
     }
 
     @Test fun wordsFavorites() = snap("words_favorites") {
-        WithBar(TopLevel.WORDS) { ListsScreen(ListsUiState(ListTab.FAVORITES, isLoading = false), {}, {}, {}, it) }
+        WithBar(TopLevel.WORDS) { ListsScreen(ListsUiState(ListTab.FAVORITES, isLoading = false), modifier = it) }
     }
 
     @Test fun wordsLearned() = snap("words_learned") {
-        WithBar(TopLevel.WORDS) { ListsScreen(ListsUiState(ListTab.LEARNED, isLoading = false), {}, {}, {}, it) }
+        WithBar(TopLevel.WORDS) { ListsScreen(ListsUiState(ListTab.LEARNED, isLoading = false), modifier = it) }
     }
 
     @Test fun stats() = snap("stats") {
-        WithBar(TopLevel.STATS) { StatsScreen(StatsUiState(), it) }
+        WithBar(TopLevel.STATS) { StatsScreen(StatsUiState(), modifier = it) }
     }
 
     @Test fun settings() = snap("settings") {
@@ -176,7 +237,40 @@ class ScreenshotTest(private val dark: Boolean) {
     }
 
     @Test fun wordMissing() = snap("word_missing") {
-        WordScreen(WordUiState(isLoading = false, word = null), onBack = {})
+        WordScreen(WordUiState(isLoading = false))
+    }
+
+    @Test fun wordsNewData() = snap("words_new_data") {
+        WithBar(TopLevel.WORDS) { ListsScreen(SampleLists, modifier = it) }
+    }
+
+    @Test fun wordsLearnedData() = snap("words_learned_data") {
+        WithBar(TopLevel.WORDS) { ListsScreen(SampleLists.copy(tab = ListTab.LEARNED), modifier = it) }
+    }
+
+    /** Light only (phase 4 scope). */
+    @Test fun wordsSearchEmpty() {
+        assumeFalse(dark)
+        snap("words_search_empty") {
+            WithBar(TopLevel.WORDS) { ListsScreen(SampleLists.copy(query = "serendipity"), modifier = it) }
+        }
+    }
+
+    @Test fun wordCard() = snap("word_card") {
+        WordScreen(
+            WordUiState(
+                isLoading = false,
+                details = WordDetails(
+                    summary = sampleWord(3, "commute", "ездить на работу, поездка на работу", box = 2, mistakes = 1,
+                        added = "2026-10-21", favorite = true, reviewed = true),
+                    entry = SampleCommute.copy(senses = SampleCommute.senses.map { it.copy(gloss = null) }),
+                ),
+            ),
+        )
+    }
+
+    @Test fun statsData() = snap("stats_data") {
+        WithBar(TopLevel.STATS) { StatsScreen(SampleStats, modifier = it) }
     }
 
     @Test fun typeSpecimen() = snap("type_specimen") {

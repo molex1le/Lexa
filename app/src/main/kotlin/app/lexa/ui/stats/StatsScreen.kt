@@ -2,6 +2,14 @@ package app.lexa.ui.stats
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import app.lexa.ui.components.formatDay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -54,12 +62,23 @@ data class StatsUiState(
     val hardWords: List<WordSummary> = emptyList(),
     /** Words in learning per box 1..5. */
     val boxes: List<Int> = List(LeitnerRules.LAST_BOX) { 0 },
+    /** Learned words, most recent first. */
+    val learnedWords: List<WordSummary> = emptyList(),
 )
 
+data class StatsActions(
+    val onOpenWord: (Long) -> Unit = {},
+    val onPracticeHard: () -> Unit = {},
+    val onOpenLearned: () -> Unit = {},
+)
+
+/** How many learned words the statistics list before «Все выученные». */
+const val LEARNED_PREVIEW = 5
+
 @Composable
-fun StatsRoute(viewModel: StatsViewModel = hiltViewModel()) {
+fun StatsRoute(actions: StatsActions, viewModel: StatsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    StatsScreen(state)
+    StatsScreen(state, actions)
 }
 
 /**
@@ -67,7 +86,7 @@ fun StatsRoute(viewModel: StatsViewModel = hiltViewModel()) {
  * Every block keeps its frame when empty, and zero is printed as 0.
  */
 @Composable
-fun StatsScreen(state: StatsUiState, modifier: Modifier = Modifier) {
+fun StatsScreen(state: StatsUiState, actions: StatsActions = StatsActions(), modifier: Modifier = Modifier) {
     val colors = LexaTheme.colors
     val type = LexaTheme.type
     Column(
@@ -135,16 +154,32 @@ fun StatsScreen(state: StatsUiState, modifier: Modifier = Modifier) {
                 }
             }
 
+            Block(stringResource(R.string.stats_learned_list_title)) {
+                if (state.learnedWords.isEmpty()) {
+                    Text(stringResource(R.string.words_empty_learned), style = type.body, color = colors.pencil)
+                } else {
+                    state.learnedWords.take(LEARNED_PREVIEW).forEach { word ->
+                        WordLine(word.term, formatDay(word.learnedAt ?: 0), colors.pencil) { actions.onOpenWord(word.id) }
+                    }
+                    if (state.learnedWords.size > LEARNED_PREVIEW) {
+                        TextAction(stringResource(R.string.stats_learned_all), actions.onOpenLearned)
+                    }
+                }
+            }
+
             Block(stringResource(R.string.stats_hard_title)) {
                 if (state.hardWords.isEmpty()) {
                     Text(stringResource(R.string.stats_hard_empty), style = type.body, color = colors.pencil)
                 } else {
                     state.hardWords.forEach { word ->
-                        Row(Modifier.fillMaxWidth().padding(vertical = Spacing.s)) {
-                            Text(word.term, style = type.body, color = colors.ink, modifier = Modifier.weight(1f))
-                            Text(word.mistakesCount.toString(), style = type.meta, color = colors.redpen)
-                        }
+                        WordLine(
+                            word.term,
+                            pluralStringResource(R.plurals.word_mistakes, word.mistakesCount, word.mistakesCount),
+                            colors.redpen,
+                        ) { actions.onOpenWord(word.id) }
                     }
+                    // A text action: today's bar already carries the screen's one marker.
+                    TextAction(stringResource(R.string.stats_hard_practice), actions.onPracticeHard)
                 }
             }
 
@@ -167,6 +202,42 @@ private fun Block(title: String, content: @Composable () -> Unit) {
     )
     Spacer(Modifier.height(Spacing.s))
     content()
+}
+
+/** One word per line, with a fact on the right; the whole line opens the word card. */
+@Composable
+private fun WordLine(term: String, fact: String, factColor: Color, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = Spacing.touch)
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            term,
+            style = LexaTheme.type.body,
+            color = LexaTheme.colors.ink,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(Spacing.s))
+        Text(fact, style = LexaTheme.type.meta, color = factColor)
+    }
+}
+
+/** A secondary action in ink: a verb, 48dp tall, no container. */
+@Composable
+private fun TextAction(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .heightIn(min = Spacing.touch)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(label, style = LexaTheme.type.body.copy(fontWeight = FontWeight(600)), color = LexaTheme.colors.ink)
+    }
 }
 
 @Composable

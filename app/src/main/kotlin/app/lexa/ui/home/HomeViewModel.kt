@@ -1,9 +1,11 @@
 package app.lexa.ui.home
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.lexa.domain.model.Direction
 import app.lexa.domain.repository.SettingsRepository
+import app.lexa.domain.repository.StatsRepository
 import app.lexa.domain.repository.WordRepository
 import app.lexa.domain.time.TimeProvider
 import app.lexa.domain.training.AnswerResult
@@ -30,7 +32,9 @@ private const val SHOWN_CANDIDATES = 3
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     words: WordRepository,
+    stats: StatsRepository,
     private val settings: SettingsRepository,
     private val training: TrainingSession,
     private val time: TimeProvider,
@@ -40,13 +44,13 @@ class HomeViewModel @Inject constructor(
     private val now = MutableStateFlow(time.nowMillis())
     private val session = MutableStateFlow<TrainingPhase?>(null)
 
-    // Streak comes from review_log in phase 4; until then it is honestly 0.
     val state: StateFlow<HomeUiState> = combine(
         now.flatMapLatest { words.observeDueCount(it) },
         words.observeCounts(),
+        now.flatMapLatest { stats.observeStreak(time.today()) },
         session,
-    ) { due, counts, phase ->
-        HomeUiState(isLoading = false, dueCount = due, counts = counts, session = phase)
+    ) { due, counts, streak, phase ->
+        HomeUiState(isLoading = false, dueCount = due, counts = counts, streakDays = streak.current, session = phase)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     private var cards: List<TrainingCard> = emptyList()
@@ -181,4 +185,22 @@ class HomeViewModel @Inject constructor(
 
     private fun shownAnswer(card: TrainingCard, direction: CardDirection): String =
         TrainingSession.expected(card, direction).take(SHOWN_CANDIDATES).joinToString(", ")
+
+    // After every field initializer: a request may start the session immediately.
+    init {
+        // «Повторить их сейчас» on the statistics screen asks for practice through this handle.
+        viewModelScope.launch {
+            savedStateHandle.getStateFlow(START_PRACTICE, false).collect { requested ->
+                if (requested) {
+                    savedStateHandle[START_PRACTICE] = false
+                    start(practice = true)
+                }
+            }
+        }
+    }
+
+    companion object {
+        /** Set on this entry's SavedStateHandle to start a practice session of the hardest words. */
+        const val START_PRACTICE = "startPractice"
+    }
 }

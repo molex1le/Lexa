@@ -354,14 +354,14 @@ private fun ResultBlock(
 }
 
 @Composable
-private fun BlockTitle(text: Int) {
+internal fun BlockTitle(text: Int) {
     Spacer(Modifier.height(Spacing.l))
     Text(stringResource(text), style = LexaTheme.type.title, color = LexaTheme.colors.ink)
     Spacer(Modifier.height(Spacing.s))
 }
 
 @Composable
-private fun ExampleRow(example: Example) {
+internal fun ExampleRow(example: Example) {
     val colors = LexaTheme.colors
     val type = LexaTheme.type
     Column {
@@ -378,7 +378,7 @@ private fun ExampleRow(example: Example) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Synonyms(synonyms: List<String>, onTranslateQuery: (String) -> Unit) {
+internal fun Synonyms(synonyms: List<String>, onTranslateQuery: (String) -> Unit) {
     val colors = LexaTheme.colors
     val label = stringResource(R.string.action_translate_synonym)
     FlowRow(
@@ -402,7 +402,7 @@ private fun Synonyms(synonyms: List<String>, onTranslateQuery: (String) -> Unit)
 }
 
 @Composable
-private fun posName(pos: PartOfSpeech): String = stringResource(
+internal fun posName(pos: PartOfSpeech): String = stringResource(
     when (pos) {
         PartOfSpeech.NOUN -> R.string.pos_noun
         PartOfSpeech.VERB -> R.string.pos_verb

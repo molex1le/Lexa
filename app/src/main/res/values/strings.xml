@@ -89,6 +89,24 @@
     <string name="words_empty_new">Пока пусто. Переведи первое слово&#160;– оно появится здесь</string>
     <string name="words_empty_favorites">Здесь будут любимые слова. Отметь слово звёздочкой в переводчике или в карточке слова</string>
     <string name="words_empty_learned">Выученных слов пока нет. Слово попадает сюда после верного ответа в пятой коробке&#160;– первое появится примерно через месяц повторений</string>
+    <string name="words_search_label">Поиск по словам и переводам</string>
+    <string name="words_search_hint">Найти слово</string>
+    <string name="words_search_clear">Очистить поиск</string>
+    <string name="words_search_empty">Ничего не нашлось по «%1$s». Проверь написание или переведи это слово&#160;– оно появится в «Новых»</string>
+    <string name="words_sort">Сортировать</string>
+    <string name="words_sort_added">По дате добавления</string>
+    <string name="words_sort_alphabet">По алфавиту</string>
+    <string name="words_sort_mistakes">По числу ошибок</string>
+    <string name="words_deleted">Слово удалено</string>
+    <string name="words_delete">Удалить</string>
+    <string name="action_restore">Вернуть</string>
+    <string name="action_return_to_learning">Вернуть в изучение</string>
+    <string name="words_learned_on">Выучено %1$s</string>
+    <string name="word_added_on">Добавлено %1$s</string>
+    <string name="word_translations">Переводы</string>
+    <string name="stats_learned_list_title">Выученные слова</string>
+    <string name="stats_learned_all">Все выученные</string>
+    <string name="stats_hard_practice">Повторить их сейчас</string>
     <string name="words_favorite">В избранном</string>
 
     <!-- Stats -->
@@ -158,5 +176,11 @@
         <item quantity="few">Верно %1$d из %2$d слов</item>
         <item quantity="many">Верно %1$d из %2$d слов</item>
         <item quantity="other">Верно %1$d из %2$d слова</item>
+    </plurals>
+    <plurals name="word_mistakes">
+        <item quantity="one">%1$d ошибка</item>
+        <item quantity="few">%1$d ошибки</item>
+        <item quantity="many">%1$d ошибок</item>
+        <item quantity="other">%1$d ошибки</item>
     </plurals>
 </resources>
