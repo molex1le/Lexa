@@ -25,6 +25,9 @@ robolectric = "4.17"
 # Robolectric runs every test on one SDK image (§18); this is the jar Robolectric 4.17 maps SDK 36 to
 robolectricAndroidAll = "16-robolectric-13921718-i7"
 roborazzi = "1.77.0"
+ktor = "3.6.0"
+# ADR-0001: on-device EN→RU translation
+mlkitTranslate = "17.0.3"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -62,6 +65,10 @@ robolectric-android-all = { module = "org.robolectric:android-all-instrumented",
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
 roborazzi-junit-rule = { module = "io.github.takahirom.roborazzi:roborazzi-junit-rule", version.ref = "roborazzi" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+mlkit-translate = { module = "com.google.mlkit:translate", version.ref = "mlkitTranslate" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

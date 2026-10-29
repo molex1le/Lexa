@@ -23,4 +23,6 @@ interface ReviewRepository {
 
 interface HistoryRepository {
     fun observeHistory(): Flow<List<app.lexa.domain.model.HistoryItem>>
+    /** One row per lookup, repeats included (docs/ARCHITECTURE.md §6.4). */
+    suspend fun record(query: String, wordId: Long?)
 }

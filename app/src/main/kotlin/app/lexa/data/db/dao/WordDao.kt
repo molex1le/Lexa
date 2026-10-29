@@ -16,6 +16,19 @@ interface WordDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(word: WordEntity): Long
 
+    /** Includes soft-deleted rows: termKey is unique across all of them. */
+    @Query("SELECT * FROM words WHERE termKey = :termKey")
+    suspend fun findByKey(termKey: String): WordEntity?
+
+    @Query("UPDATE words SET deletedAt = NULL WHERE id = :id")
+    suspend fun restore(id: Long)
+
+    @Query("DELETE FROM words WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("UPDATE words SET isFavorite = :favorite WHERE id = :id")
+    suspend fun setFavorite(id: Long, favorite: Boolean)
+
     @Query("SELECT * FROM words WHERE deletedAt IS NULL AND learnedAt IS NULL ORDER BY addedAt DESC")
     fun observeNotLearned(): Flow<List<WordEntity>>
 

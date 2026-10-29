@@ -11,7 +11,23 @@ import app.lexa.data.db.dao.HistoryDao
 import app.lexa.data.db.dao.ReviewLogDao
 import app.lexa.data.db.dao.TranslationCacheDao
 import app.lexa.data.db.dao.WordDao
+import app.lexa.data.dictionary.AndroidNetworkStatus
+import app.lexa.data.dictionary.CompositeDictionaryRepository
+import app.lexa.data.dictionary.FreeDictionarySource
+import app.lexa.data.dictionary.MlKitMachineTranslator
+import app.lexa.data.dictionary.TatoebaSource
 import app.lexa.data.repository.RoomHistoryRepository
+import app.lexa.data.repository.RoomTranslatedWordRepository
+import app.lexa.domain.repository.DictionaryRepository
+import app.lexa.domain.repository.DictionarySource
+import app.lexa.domain.repository.ExampleSentenceSource
+import app.lexa.domain.repository.MachineTranslator
+import app.lexa.domain.repository.NetworkStatus
+import app.lexa.domain.repository.TranslatedWordRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpTimeout
+import kotlinx.serialization.json.Json
 import app.lexa.data.repository.RoomReviewRepository
 import app.lexa.data.repository.RoomWordRepository
 import app.lexa.data.settings.DataStoreSettingsRepository
@@ -87,4 +103,27 @@ abstract class RepositoryModule {
     @Binds abstract fun reviewRepository(impl: RoomReviewRepository): ReviewRepository
     @Binds abstract fun historyRepository(impl: RoomHistoryRepository): HistoryRepository
     @Binds abstract fun settingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
+    @Binds abstract fun translatedWordRepository(impl: RoomTranslatedWordRepository): TranslatedWordRepository
+}
+
+/** Translator sources (ADR-0001). Swap a source by binding another implementation here. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class DictionaryModule {
+    @Binds abstract fun dictionaryRepository(impl: CompositeDictionaryRepository): DictionaryRepository
+    @Binds abstract fun dictionarySource(impl: FreeDictionarySource): DictionarySource
+    @Binds abstract fun exampleSource(impl: TatoebaSource): ExampleSentenceSource
+    @Binds abstract fun machineTranslator(impl: MlKitMachineTranslator): MachineTranslator
+    @Binds abstract fun networkStatus(impl: AndroidNetworkStatus): NetworkStatus
+
+    companion object {
+        @Provides @Singleton
+        fun json(): Json = Json { ignoreUnknownKeys = true }
+
+        @Provides @Singleton
+        fun httpClient(): HttpClient = HttpClient(OkHttp) {
+            expectSuccess = false
+            install(HttpTimeout) { requestTimeoutMillis = CompositeDictionaryRepository.SOURCE_TIMEOUT_MS }
+        }
+    }
 }
