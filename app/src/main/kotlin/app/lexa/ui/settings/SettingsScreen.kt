@@ -1,6 +1,27 @@
 package app.lexa.ui.settings
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDefaults
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import app.lexa.ui.theme.LexaCorner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +60,9 @@ import app.lexa.ui.theme.Spacing
 data class SettingsUiState(
     val direction: Direction = Direction.EN_RU,
     val reminderMinutes: Int = Settings.DEFAULT_REMINDER_MINUTES,
+    val reminderEnabled: Boolean = false,
+    /** Notifications were refused when the reminder was turned on. */
+    val notificationsDenied: Boolean = false,
 ) {
     val reminderTime: String get() = "%d:%02d".format(reminderMinutes / 60, reminderMinutes % 60)
 }
@@ -46,7 +70,22 @@ data class SettingsUiState(
 @Composable
 fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    SettingsScreen(state, onBack = onBack, onDirectionChange = viewModel::onDirectionChange)
+    val context = LocalContext.current
+    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) viewModel.onReminderEnabledChange(true) else viewModel.onNotificationsDenied()
+    }
+    SettingsScreen(
+        state,
+        onBack = onBack,
+        onDirectionChange = viewModel::onDirectionChange,
+        onReminderToggle = { enabled ->
+            val needsPermission = enabled && Build.VERSION.SDK_INT >= 33 &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+            if (needsPermission) askPermission.launch(Manifest.permission.POST_NOTIFICATIONS) else viewModel.onReminderEnabledChange(enabled)
+        },
+        onReminderTimeChange = viewModel::onReminderTimeChange,
+    )
 }
 
 @Composable
@@ -55,7 +94,10 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onDirectionChange: (Direction) -> Unit,
     modifier: Modifier = Modifier,
+    onReminderToggle: (Boolean) -> Unit = {},
+    onReminderTimeChange: (Int) -> Unit = {},
 ) {
+    var pickingTime by rememberSaveable { mutableStateOf(false) }
     val colors = LexaTheme.colors
     val type = LexaTheme.type
     Column(
@@ -78,12 +120,118 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(Spacing.xl))
             SectionTitle(R.string.settings_reminder_title)
-            Text(stringResource(R.string.settings_reminder_value, state.reminderTime), style = type.body, color = colors.ink)
-            Spacer(Modifier.height(Spacing.xs))
-            Text(stringResource(R.string.settings_reminder_unavailable), style = type.meta, color = colors.pencil)
+            ReminderSwitch(state.reminderEnabled, onReminderToggle)
+            when {
+                state.reminderEnabled -> Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 56.dp)
+                        .clickable(onClickLabel = stringResource(R.string.settings_reminder_change_time)) { pickingTime = true },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        stringResource(R.string.settings_reminder_value, state.reminderTime),
+                        style = type.body,
+                        color = colors.ink,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(stringResource(R.string.settings_reminder_change_time), style = type.meta, color = colors.pencil)
+                }
+                state.notificationsDenied -> Text(
+                    stringResource(R.string.settings_reminder_denied),
+                    style = type.meta,
+                    color = colors.ink,
+                    modifier = Modifier.padding(top = Spacing.xs),
+                )
+                else -> Text(
+                    stringResource(R.string.settings_reminder_off),
+                    style = type.meta,
+                    color = colors.pencil,
+                    modifier = Modifier.padding(top = Spacing.xs),
+                )
+            }
             Spacer(Modifier.height(Spacing.m))
         }
     }
+    if (pickingTime) {
+        ReminderTimeDialog(
+            initialMinutes = state.reminderMinutes,
+            onConfirm = { minutes ->
+                pickingTime = false
+                onReminderTimeChange(minutes)
+            },
+            onDismiss = { pickingTime = false },
+        )
+    }
+}
+
+@Composable
+private fun ReminderSwitch(checked: Boolean, onToggle: (Boolean) -> Unit) {
+    val colors = LexaTheme.colors
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onToggle),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            stringResource(R.string.settings_reminder_switch),
+            style = LexaTheme.type.body,
+            color = colors.ink,
+            modifier = Modifier.weight(1f),
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = colors.onMarker,
+                checkedTrackColor = colors.marker,
+                checkedBorderColor = colors.marker,
+                uncheckedThumbColor = colors.pencil,
+                uncheckedTrackColor = colors.sheet,
+                uncheckedBorderColor = colors.pencil,
+            ),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReminderTimeDialog(initialMinutes: Int, onConfirm: (Int) -> Unit, onDismiss: () -> Unit) {
+    val colors = LexaTheme.colors
+    val picker = rememberTimePickerState(initialHour = initialMinutes / 60, initialMinute = initialMinutes % 60, is24Hour = true)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.paper,
+        shape = LexaCorner,
+        title = { Text(stringResource(R.string.settings_time_title), style = LexaTheme.type.title, color = colors.ink) },
+        text = {
+            TimePicker(
+                state = picker,
+                colors = TimePickerDefaults.colors(
+                    clockDialColor = colors.sheet,
+                    selectorColor = colors.marker,
+                    clockDialSelectedContentColor = colors.onMarker,
+                    clockDialUnselectedContentColor = colors.ink,
+                    timeSelectorSelectedContainerColor = colors.marker,
+                    timeSelectorSelectedContentColor = colors.onMarker,
+                    timeSelectorUnselectedContainerColor = colors.sheet,
+                    timeSelectorUnselectedContentColor = colors.ink,
+                ),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(picker.hour * 60 + picker.minute) }) {
+                Text(stringResource(R.string.settings_time_save), style = LexaTheme.type.body, color = colors.ink)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel), style = LexaTheme.type.body, color = colors.pencil)
+            }
+        },
+    )
 }
 
 @Composable

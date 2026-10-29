@@ -52,7 +52,8 @@ val LocalLexaColors = staticCompositionLocalOf { LightLexaColors }
  * a Material component. Containers are one tone step (sheet); tonal elevation tint is off.
  */
 internal fun LexaColors.toColorScheme(): ColorScheme {
-    val scrim = ink.copy(alpha = 0.32f)
+    // A scrim dims what is behind: dark ink on the light theme, the dark paper (stronger) on the dark one.
+    val scrim = if (isDark) paper.copy(alpha = 0.6f) else ink.copy(alpha = 0.32f)
     val transparent = Color.Transparent
     return ColorScheme(
         primary = ink,

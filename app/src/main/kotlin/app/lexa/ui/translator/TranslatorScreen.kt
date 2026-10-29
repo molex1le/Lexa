@@ -173,7 +173,7 @@ fun TranslatorScreen(
                     )
                     is TranslatorPhase.Error -> ErrorBlock(phase.error)
                     is TranslatorPhase.Result -> key(phase.translation.term, phase.wordId != null) {
-                        ResultBlock(phase, onToggleFavorite, onPronounce, onTranslateQuery)
+                        TranslationResult(phase, onToggleFavorite, onPronounce, onTranslateQuery)
                     }
                 }
                 Spacer(Modifier.height(Spacing.xl))
@@ -254,7 +254,7 @@ private fun Recent(recent: List<HistoryItem>, onTranslateQuery: (String) -> Unit
 }
 
 @Composable
-private fun ErrorBlock(error: LookupError) {
+internal fun ErrorBlock(error: LookupError) {
     val (title, hint) = when (error) {
         LookupError.NO_NETWORK -> R.string.error_no_network to R.string.error_no_network_hint
         LookupError.MODEL_MISSING_OFFLINE -> R.string.error_model_offline to R.string.error_model_offline_hint
@@ -275,8 +275,9 @@ private fun rememberReducedMotion(): Boolean {
     }
 }
 
+/** The result of a lookup: shared by the «Перевод» tab and the translate sheet (TranslateActivity). */
 @Composable
-private fun ResultBlock(
+internal fun TranslationResult(
     result: TranslatorPhase.Result,
     onToggleFavorite: () -> Unit,
     onPronounce: () -> Unit,

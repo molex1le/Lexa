@@ -5,7 +5,8 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 /** One radius for everything that has a shape (docs/DESIGN_TOKENS.md «Сетка и форма»). */
-val LexaCorner = RoundedCornerShape(6.dp)
+val LexaCornerRadius = 6.dp
+val LexaCorner = RoundedCornerShape(LexaCornerRadius)
 
 internal val LexaShapes = Shapes(
     extraSmall = LexaCorner,

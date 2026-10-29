@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination
@@ -53,9 +54,27 @@ private fun NavHostController.navigateTopLevel(item: TopLevel) {
     }
 }
 
+/** An entry from outside the app: the reminder notification or «Открыть в Lexa» in the translate sheet. */
+sealed interface LaunchTarget {
+    data object Training : LaunchTarget
+    data class Word(val wordId: Long) : LaunchTarget
+}
+
 @Composable
-fun LexaNavHost(navController: NavHostController = rememberNavController()) {
+fun LexaNavHost(
+    navController: NavHostController = rememberNavController(),
+    launchTarget: LaunchTarget? = null,
+    onLaunchHandled: () -> Unit = {},
+) {
     val entry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(launchTarget) {
+        when (launchTarget) {
+            null -> return@LaunchedEffect
+            LaunchTarget.Training -> navController.navigateTopLevel(TopLevel.TRAINING)
+            is LaunchTarget.Word -> navController.navigate(WordRoute(launchTarget.wordId)) { launchSingleTop = true }
+        }
+        onLaunchHandled()
+    }
     val current = entry?.destination?.topLevel()
     Scaffold(
         containerColor = LexaTheme.colors.paper,

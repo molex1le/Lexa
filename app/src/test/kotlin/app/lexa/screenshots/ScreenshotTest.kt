@@ -37,7 +37,19 @@ import app.lexa.domain.repository.LookupError
 import org.junit.Assume.assumeFalse
 import app.lexa.ui.word.WordScreen
 import app.lexa.ui.word.WordUiState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.unit.dp
+import app.lexa.ui.share.SheetActions
+import app.lexa.ui.share.SheetContent
+import app.lexa.ui.share.TranslateSheetContent
+import app.lexa.ui.theme.LexaCornerRadius
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -230,6 +242,35 @@ class ScreenshotTest(private val dark: Boolean) {
 
     @Test fun settings() = snap("settings") {
         SettingsScreen(SettingsUiState(), onBack = {}, onDirectionChange = {})
+    }
+
+    @Test fun settingsReminderOn() = snap("settings_reminder") {
+        SettingsScreen(SettingsUiState(reminderEnabled = true), onBack = {}, onDirectionChange = {})
+    }
+
+    /** The sheet as it floats over the calling app: scrim above, the sheet body at the bottom. */
+    @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+    @Test fun translateSheet() = snap("translate_sheet") {
+        val colors = LexaTheme.colors
+        Column(Modifier.fillMaxSize().background(androidx.compose.material3.MaterialTheme.colorScheme.scrim)) {
+            Spacer(Modifier.weight(1f))
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 640.dp)
+                    .shadow(8.dp, RoundedCornerShape(topStart = LexaCornerRadius, topEnd = LexaCornerRadius))
+                    .background(colors.paper, RoundedCornerShape(topStart = LexaCornerRadius, topEnd = LexaCornerRadius)),
+            ) {
+                // Stands in for ModalBottomSheet's drag handle, which needs a real window to draw.
+                androidx.compose.material3.BottomSheetDefaults.DragHandle(Modifier.align(Alignment.CenterHorizontally))
+                TranslateSheetContent(
+                    SheetContent.Lookup(
+                        TranslatorPhase.Result(SampleCommute, "commute", wordId = 1, isFavorite = false, justAdded = true),
+                    ),
+                    SheetActions(),
+                )
+            }
+        }
     }
 
     @Test fun history() = snap("history") {

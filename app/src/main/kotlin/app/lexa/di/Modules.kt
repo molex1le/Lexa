@@ -110,6 +110,7 @@ abstract class RepositoryModule {
     @Binds abstract fun settingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
     @Binds abstract fun translatedWordRepository(impl: RoomTranslatedWordRepository): TranslatedWordRepository
     @Binds abstract fun trainingRepository(impl: RoomTrainingRepository): TrainingRepository
+    @Binds abstract fun reminderScheduler(impl: app.lexa.reminder.WorkManagerReminderScheduler): app.lexa.reminder.ReminderScheduler
 }
 
 /** Translator sources (ADR-0001). Swap a source by binding another implementation here. */

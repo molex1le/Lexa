@@ -3,4 +3,13 @@
     <style name="Theme.Lexa" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/paper</item>
     </style>
+
+    <!-- TranslateActivity: no window of its own, the calling app stays visible behind the Compose sheet -->
+    <style name="Theme.Lexa.Translucent" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
 </resources>

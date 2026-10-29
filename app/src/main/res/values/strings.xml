@@ -140,9 +140,32 @@
     <string name="settings_direction_title">Что показывать на карточке</string>
     <string name="settings_direction_en_ru">Английское слово&#160;– вписываю перевод</string>
     <string name="settings_direction_ru_en">Русский перевод&#160;– вписываю слово</string>
-    <string name="settings_reminder_title">Напоминание о повторении</string>
+    <string name="settings_reminder_title">Напоминание</string>
+    <string name="settings_reminder_switch">Напоминать о повторении</string>
     <string name="settings_reminder_value">Каждый день в %1$s</string>
-    <string name="settings_reminder_unavailable">Пока не работает: напоминания появятся в следующем обновлении</string>
+    <string name="settings_reminder_off">Выключено. Напоминание приходит, только если есть слова к повторению</string>
+    <string name="settings_reminder_change_time">Изменить время</string>
+    <string name="settings_reminder_denied">Уведомления для Lexa запрещены. Разреши их в настройках телефона: Приложения → Lexa → Уведомления – и включи напоминание снова</string>
+    <string name="settings_time_title">Время напоминания</string>
+    <string name="settings_time_save">Сохранить время</string>
+    <string name="action_cancel">Отмена</string>
+
+    <!-- Reminder notification -->
+    <string name="reminder_channel_name">Напоминания о повторении</string>
+    <string name="reminder_body">Открой тренировку – это займёт пару минут</string>
+    <plurals name="reminder_due">
+        <item quantity="one">Пора повторить: %d слово</item>
+        <item quantity="few">Пора повторить: %d слова</item>
+        <item quantity="many">Пора повторить: %d слов</item>
+        <item quantity="other">Пора повторить: %d слова</item>
+    </plurals>
+
+    <!-- Text selection and «Поделиться» -->
+    <string name="process_text_label">Перевести в Lexa</string>
+    <string name="share_too_long">Это длинный текст. Выдели одно слово или короткую фразу – Lexa переведёт и добавит её</string>
+    <string name="share_empty">Здесь нет текста. Выдели слово – Lexa переведёт и добавит его</string>
+    <string name="share_open_in_app">Открыть в Lexa</string>
+    <string name="share_close">Закрыть</string>
 
     <!-- History -->
     <string name="history_title">История</string>
