@@ -3,6 +3,7 @@ package app.lexa.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.lexa.domain.model.Direction
+import app.lexa.domain.model.VocabLevel
 import app.lexa.domain.repository.SettingsRepository
 import app.lexa.reminder.ReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,11 +27,16 @@ class SettingsViewModel @Inject constructor(
     val state: StateFlow<SettingsUiState> = combine(settings.settings, permissionDenied) { s, denied ->
         SettingsUiState(
             direction = s.direction,
+            vocabLevel = s.vocabLevel,
             reminderMinutes = s.reminderMinutes,
             reminderEnabled = s.reminderEnabled,
             notificationsDenied = denied && !s.reminderEnabled,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+
+    fun onLevelChange(level: VocabLevel) {
+        viewModelScope.launch { settings.setVocabLevel(level) }
+    }
 
     fun onDirectionChange(direction: Direction) {
         viewModelScope.launch { settings.setDirection(direction) }

@@ -105,6 +105,8 @@ sealed interface TrainingPhase {
         val example: Example?,
         /** Set on at most one answer per session. */
         val celebration: Celebration? = null,
+        /** A built-in word: wrong adds it to «Новые», right means it is known and never shown again. */
+        val fromDeck: Boolean = false,
     ) : TrainingPhase
 
     data class Done(val correct: Int, val total: Int) : TrainingPhase
@@ -193,7 +195,7 @@ private fun QuestionCard(phase: TrainingPhase.Question, actions: TrainingActions
     val focus = remember { FocusRequester() }
     val label = stringResource(R.string.training_answer_label)
     Progress(phase.position, phase.total)
-    CardFace(phase.card) { BoxIndicator(phase.card.box) }
+    CardFace(phase.card) { CardBoxes(phase.card.box) }
     BasicTextField(
         value = phase.answer,
         onValueChange = actions.onAnswerChange,
@@ -281,14 +283,14 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
     val angle = flip.value
     if (angle < 90f) {
         // Front: the question as it was, turning away. Text is never shown mirrored.
-        CardFace(phase.card, rotationY = angle) { BoxIndicator(phase.card.box) }
+        CardFace(phase.card, rotationY = angle) { CardBoxes(phase.card.box) }
     } else {
         CardFace(
             phase.card,
             rotationY = angle - 180f,
             term = { word -> FlyingWord(phase.card.prompt, flight.value, word) },
         ) {
-            BoxIndicator(phase.boxAfter, markerAt = markerAt.value)
+            if (phase.boxAfter > 0) BoxIndicator(phase.boxAfter, markerAt = markerAt.value) else CardBoxes(0)
         }
     }
 
@@ -407,8 +409,22 @@ private fun CelebrationLine(text: String, progress: Float) {
     )
 }
 
+/** A built-in word (box 0) is in no box yet: it says so instead of showing five empty slots. */
 @Composable
-private fun statusLine(phase: TrainingPhase.Feedback): String = when (phase.verdict) {
+private fun CardBoxes(box: Int) {
+    if (box > 0) BoxIndicator(box)
+    else Text(stringResource(R.string.training_deck_word), style = LexaTheme.type.meta, color = LexaTheme.colors.pencil)
+}
+
+@Composable
+private fun statusLine(phase: TrainingPhase.Feedback): String = when {
+    phase.fromDeck && phase.verdict == Verdict.WRONG -> stringResource(R.string.training_deck_added)
+    phase.fromDeck -> stringResource(R.string.training_deck_known)
+    else -> userWordStatus(phase)
+}
+
+@Composable
+private fun userWordStatus(phase: TrainingPhase.Feedback): String = when (phase.verdict) {
     Verdict.WRONG -> stringResource(R.string.training_back_to_new)
     Verdict.OVERRIDDEN ->
         if (phase.learned) stringResource(R.string.training_overridden_learned)

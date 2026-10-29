@@ -4,6 +4,7 @@ import app.lexa.domain.leitner.LeitnerScheduler
 import app.lexa.domain.leitner.ReviewState
 import app.lexa.domain.leitner.Transition
 import app.lexa.domain.model.Example
+import app.lexa.domain.model.VocabLevel
 import app.lexa.domain.time.TimeProvider
 import javax.inject.Inject
 
@@ -15,6 +16,8 @@ data class TrainingCard(
     val ipa: String? = null,
     val example: Example? = null,
     val state: ReviewState,
+    /** Set for a built-in word not yet in the list ([wordId] is 0 then). */
+    val deck: DeckWord? = null,
 )
 
 /** The side shown on one card: EN_RU shows the term and expects Russian. */
@@ -56,6 +59,8 @@ data class AnswerResult(
     val check: CheckResult,
     val transition: Transition,
     val logId: Long,
+    /** For a deck card answered wrong: the id of the word it became in «Новые». */
+    val newWordId: Long? = null,
 )
 
 /**
@@ -64,15 +69,28 @@ data class AnswerResult(
  */
 class TrainingSession @Inject constructor(
     private val repository: TrainingRepository,
+    private val deck: DeckRepository,
     private val scheduler: LeitnerScheduler,
     private val time: TimeProvider,
+    private val random: kotlin.random.Random = kotlin.random.Random.Default,
 ) {
-    /** Due words, or hard words when [practice] (those answers do not promote, §17). */
-    suspend fun build(practice: Boolean = false, limit: Int = SESSION_SIZE): List<TrainingCard> =
-        if (practice) repository.hardCards(limit) else repository.dueCards(time.nowMillis(), limit)
+    /**
+     * Hard words when [practice] (those answers do not promote, §17). Otherwise due words (at most
+     * [MAX_DUE], so new words always get a place) topped up with random unseen words of [level],
+     * shuffled together.
+     */
+    suspend fun build(practice: Boolean = false, level: VocabLevel? = null, limit: Int = SESSION_SIZE): List<TrainingCard> {
+        if (practice) return repository.hardCards(limit)
+        val due = repository.dueCards(time.nowMillis(), if (level == null) limit else minOf(MAX_DUE, limit))
+        if (level == null) return due
+        val fresh = deck.randomUnseen(level, limit - due.size).map { it.toCard() }
+        return (due + fresh).shuffled(random)
+    }
 
     suspend fun answer(card: TrainingCard, direction: CardDirection, userAnswer: String, wasDue: Boolean): AnswerResult {
         val check = AnswerChecker.check(userAnswer, expected(card, direction), language(direction))
+        val deckWord = card.deck
+        if (deckWord != null) return answerDeck(card, deckWord, direction, userAnswer, check)
         val transition = if (check.isCorrect) scheduler.onCorrect(card.state, wasDue) else scheduler.onWrong(card.state)
         val outcome = when (check) {
             is CheckResult.Exact -> AnswerOutcome.CORRECT
@@ -96,14 +114,64 @@ class TrainingSession @Inject constructor(
     }
 
     /** Re-scores a wrong answer as correct from the card's state before it; no new log row. */
-    suspend fun override(card: TrainingCard, logId: Long, wasDue: Boolean): Transition {
+    suspend fun override(card: TrainingCard, result: AnswerResult, wasDue: Boolean): Transition {
+        val deckWord = card.deck
+        val newWordId = result.newWordId
+        if (deckWord != null && newWordId != null) {
+            deck.undoAddAsNew(newWordId, deckWord.term)
+            return Transition(card.state, DECK_KNOWN)
+        }
         val transition = scheduler.onOverride(card.state, wasDue)
-        repository.overrideAnswer(card.wordId, transition.state, logId, transition.toBox)
+        repository.overrideAnswer(card.wordId, transition.state, result.logId, transition.toBox)
         return transition
+    }
+
+    /**
+     * A built-in word: known → it is never shown again; not known → it joins «Новые» in box 1 with
+     * the wrong answer logged, exactly like a word that fell back from a higher box.
+     */
+    private suspend fun answerDeck(
+        card: TrainingCard,
+        word: DeckWord,
+        direction: CardDirection,
+        userAnswer: String,
+        check: CheckResult,
+    ): AnswerResult {
+        if (check.isCorrect) {
+            deck.markKnown(word.term)
+            return AnswerResult(check, Transition(card.state, DECK_KNOWN), logId = -1)
+        }
+        val now = time.nowMillis()
+        val transition = scheduler.onWrong(card.state.copy(box = 1, nextReviewAt = now))
+        val record = ReviewRecord(
+            wordId = 0,
+            answeredAt = now,
+            localDay = time.today().toEpochDay(),
+            direction = direction,
+            userAnswer = userAnswer.trim(),
+            outcome = AnswerOutcome.WRONG,
+            fromBox = 1,
+            toBox = transition.toBox,
+            wasDue = false,
+        )
+        val (wordId, logId) = deck.addAsNew(word, record)
+        return AnswerResult(check, transition, logId, newWordId = wordId)
     }
 
     companion object {
         const val SESSION_SIZE = 20
+        /** Due words per session at most; the rest are new built-in words. */
+        const val MAX_DUE = 12
+        /** [Transition.toBox] of a deck word answered correctly: known, not entered into the boxes. */
+        const val DECK_KNOWN = -1
+
+        fun DeckWord.toCard() = TrainingCard(
+            wordId = 0,
+            term = term,
+            translations = listOf(translations),
+            state = ReviewState(box = 0, nextReviewAt = 0, mistakesCount = 0),
+            deck = this,
+        )
 
         fun expected(card: TrainingCard, direction: CardDirection): List<String> = when (direction) {
             CardDirection.EN_RU -> AnswerChecker.candidates(card.translations)

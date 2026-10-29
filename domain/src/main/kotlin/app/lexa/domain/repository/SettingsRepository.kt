@@ -2,6 +2,7 @@ package app.lexa.domain.repository
 
 import app.lexa.domain.model.Direction
 import app.lexa.domain.model.Settings
+import app.lexa.domain.model.VocabLevel
 import app.lexa.domain.model.WordSort
 import kotlinx.coroutines.flow.Flow
 
@@ -11,4 +12,5 @@ interface SettingsRepository {
     suspend fun setReminderMinutes(minutes: Int)
     suspend fun setReminderEnabled(enabled: Boolean)
     suspend fun setWordSort(sort: WordSort)
+    suspend fun setVocabLevel(level: VocabLevel)
 }

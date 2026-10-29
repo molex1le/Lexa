@@ -14,7 +14,7 @@ import app.lexa.data.db.dao.WordDao
 import app.lexa.data.dictionary.AndroidNetworkStatus
 import app.lexa.data.dictionary.CompositeDictionaryRepository
 import app.lexa.data.dictionary.FreeDictionarySource
-import app.lexa.data.dictionary.MlKitMachineTranslator
+import app.lexa.data.dictionary.ResilientMachineTranslator
 import app.lexa.data.dictionary.TatoebaSource
 import app.lexa.data.repository.RoomHistoryRepository
 import app.lexa.data.repository.RoomTranslatedWordRepository
@@ -70,6 +70,9 @@ object AppModule {
     fun applicationScope(@DefaultDispatcher dispatcher: CoroutineDispatcher): CoroutineScope =
         CoroutineScope(SupervisorJob() + dispatcher)
 
+    /** Session shuffling and the built-in deck; tests pass a seeded one. */
+    @Provides fun random(): kotlin.random.Random = kotlin.random.Random.Default
+
     @Provides @IoDispatcher
     fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
@@ -111,6 +114,7 @@ abstract class RepositoryModule {
     @Binds abstract fun settingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
     @Binds abstract fun translatedWordRepository(impl: RoomTranslatedWordRepository): TranslatedWordRepository
     @Binds abstract fun trainingRepository(impl: RoomTrainingRepository): TrainingRepository
+    @Binds abstract fun deckRepository(impl: app.lexa.data.repository.AssetDeckRepository): app.lexa.domain.training.DeckRepository
     @Binds abstract fun reminderScheduler(impl: app.lexa.reminder.WorkManagerReminderScheduler): app.lexa.reminder.ReminderScheduler
 }
 
@@ -121,7 +125,7 @@ abstract class DictionaryModule {
     @Binds abstract fun dictionaryRepository(impl: CompositeDictionaryRepository): DictionaryRepository
     @Binds abstract fun dictionarySource(impl: FreeDictionarySource): DictionarySource
     @Binds abstract fun exampleSource(impl: TatoebaSource): ExampleSentenceSource
-    @Binds abstract fun machineTranslator(impl: MlKitMachineTranslator): MachineTranslator
+    @Binds abstract fun machineTranslator(impl: ResilientMachineTranslator): MachineTranslator
     @Binds abstract fun networkStatus(impl: AndroidNetworkStatus): NetworkStatus
 
     companion object {

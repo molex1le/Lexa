@@ -52,6 +52,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.lexa.R
 import app.lexa.domain.model.Direction
+import app.lexa.domain.model.VocabLevel
+import app.lexa.ui.home.levelLabel
 import app.lexa.domain.model.Settings
 import app.lexa.ui.components.ScreenHeader
 import app.lexa.ui.theme.LexaTheme
@@ -59,6 +61,7 @@ import app.lexa.ui.theme.Spacing
 
 data class SettingsUiState(
     val direction: Direction = Direction.EN_RU,
+    val vocabLevel: VocabLevel? = null,
     val reminderMinutes: Int = Settings.DEFAULT_REMINDER_MINUTES,
     val reminderEnabled: Boolean = false,
     /** Notifications were refused when the reminder was turned on. */
@@ -78,6 +81,7 @@ fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewMod
         state,
         onBack = onBack,
         onDirectionChange = viewModel::onDirectionChange,
+        onLevelChange = viewModel::onLevelChange,
         onReminderToggle = { enabled ->
             val needsPermission = enabled && Build.VERSION.SDK_INT >= 33 &&
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
@@ -96,6 +100,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     onReminderToggle: (Boolean) -> Unit = {},
     onReminderTimeChange: (Int) -> Unit = {},
+    onLevelChange: (VocabLevel) -> Unit = {},
 ) {
     var pickingTime by rememberSaveable { mutableStateOf(false) }
     val colors = LexaTheme.colors
@@ -116,6 +121,13 @@ fun SettingsScreen(
                 }
                 DirectionOption(R.string.settings_direction_ru_en, state.direction == Direction.RU_EN) {
                     onDirectionChange(Direction.RU_EN)
+                }
+            }
+            Spacer(Modifier.height(Spacing.xl))
+            SectionTitle(R.string.settings_level_title)
+            Column(Modifier.selectableGroup()) {
+                VocabLevel.entries.forEach { level ->
+                    OptionRow(levelLabel(level), state.vocabLevel == level) { onLevelChange(level) }
                 }
             }
             Spacer(Modifier.height(Spacing.xl))
@@ -246,7 +258,11 @@ private fun SectionTitle(@StringRes text: Int) {
 }
 
 @Composable
-private fun DirectionOption(@StringRes label: Int, selected: Boolean, onClick: () -> Unit) {
+private fun DirectionOption(@StringRes label: Int, selected: Boolean, onClick: () -> Unit) =
+    OptionRow(stringResource(label), selected, onClick)
+
+@Composable
+private fun OptionRow(label: String, selected: Boolean, onClick: () -> Unit) {
     val colors = LexaTheme.colors
     Row(
         Modifier
@@ -263,6 +279,6 @@ private fun DirectionOption(@StringRes label: Int, selected: Boolean, onClick: (
             colors = RadioButtonDefaults.colors(selectedColor = colors.ink, unselectedColor = colors.pencil),
         )
         Spacer(Modifier.width(Spacing.m))
-        Text(stringResource(label), style = LexaTheme.type.body, color = colors.ink)
+        Text(label, style = LexaTheme.type.body, color = colors.ink)
     }
 }

@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import app.lexa.domain.model.Direction
 import app.lexa.domain.model.Settings
+import app.lexa.domain.model.VocabLevel
 import app.lexa.domain.model.WordSort
 import app.lexa.domain.repository.SettingsRepository
 import javax.inject.Inject
@@ -29,6 +30,7 @@ class DataStoreSettingsRepository @Inject constructor(
             wordSort = prefs[Keys.wordSort]
                 ?.let { name -> WordSort.entries.firstOrNull { it.name == name } }
                 ?: WordSort.ADDED,
+            vocabLevel = prefs[Keys.vocabLevel]?.let { name -> VocabLevel.entries.firstOrNull { it.name == name } },
         )
     }
 
@@ -48,10 +50,15 @@ class DataStoreSettingsRepository @Inject constructor(
         store.edit { it[Keys.wordSort] = sort.name }
     }
 
+    override suspend fun setVocabLevel(level: VocabLevel) {
+        store.edit { it[Keys.vocabLevel] = level.name }
+    }
+
     private object Keys {
         val direction = stringPreferencesKey("direction")
         val reminderTime = intPreferencesKey("reminderTime")
         val reminderEnabled = booleanPreferencesKey("reminderEnabled")
         val wordSort = stringPreferencesKey("wordSort")
+        val vocabLevel = stringPreferencesKey("vocabLevel")
     }
 }

@@ -34,7 +34,9 @@ class TrainingRepositoryTest {
     private val time = object : TimeProvider {
         override val clock: Clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC)
     }
-    private val session = TrainingSession(RoomTrainingRepository(db), LeitnerScheduler(time), time)
+    private val session = TrainingSession(
+        RoomTrainingRepository(db), AssetDeckRepository({ "" }, db, time, kotlin.random.Random(1)), LeitnerScheduler(time), time,
+    )
 
     @After fun close() = db.close()
 
@@ -73,7 +75,7 @@ class TrainingRepositoryTest {
             assertEquals(NOW, it.lastReviewedAt)
         }
 
-        session.override(card, wrong.logId, wasDue = true)
+        session.override(card, wrong, wasDue = true)
         db.wordDao().find(card.wordId)!!.let {
             assertEquals(4, it.box)
             assertEquals(0, it.mistakesCount)

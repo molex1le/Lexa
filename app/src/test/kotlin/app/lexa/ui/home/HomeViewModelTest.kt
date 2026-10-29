@@ -47,6 +47,7 @@ private object FixedSettings : SettingsRepository {
     override suspend fun setReminderMinutes(minutes: Int) = Unit
     override suspend fun setReminderEnabled(enabled: Boolean) = Unit
     override suspend fun setWordSort(sort: WordSort) = Unit
+    override suspend fun setVocabLevel(level: app.lexa.domain.model.VocabLevel) = Unit
 }
 
 /** The session state machine against an in-memory database whose queries run inline. */
@@ -78,12 +79,15 @@ class HomeViewModelTest {
         ),
     )
 
+    private val deck by lazy { app.lexa.data.repository.AssetDeckRepository({ "" }, db, time, kotlin.random.Random(1)) }
+
     private fun viewModel() = HomeViewModel(
         SavedStateHandle(),
         RoomWordRepository(db.wordDao(), time),
         RoomStatsRepository(db.wordDao(), db.reviewLogDao(), time),
         FixedSettings,
-        TrainingSession(RoomTrainingRepository(db), LeitnerScheduler(time), time),
+        TrainingSession(RoomTrainingRepository(db), deck, LeitnerScheduler(time), time),
+        deck,
         time,
     )
 

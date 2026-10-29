@@ -6,6 +6,8 @@ data class Settings(
     val reminderMinutes: Int = DEFAULT_REMINDER_MINUTES,
     val reminderEnabled: Boolean = false,
     val wordSort: WordSort = WordSort.ADDED,
+    /** Null until the learner picks a level or takes the placement test. */
+    val vocabLevel: VocabLevel? = null,
 ) {
     companion object {
         const val DEFAULT_REMINDER_MINUTES = 19 * 60

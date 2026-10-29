@@ -11,6 +11,10 @@ import app.lexa.domain.time.TimeProvider
 import app.lexa.domain.training.AnswerResult
 import app.lexa.domain.training.CardDirection
 import app.lexa.domain.training.CheckResult
+import app.lexa.domain.training.DeckRepository
+import app.lexa.domain.training.DeckWord
+import app.lexa.domain.training.PlacementTest
+import app.lexa.domain.model.VocabLevel
 import app.lexa.domain.training.TrainingCard
 import app.lexa.domain.training.TrainingSession
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,6 +44,7 @@ class HomeViewModel @Inject constructor(
     private val stats: StatsRepository,
     private val settings: SettingsRepository,
     private val training: TrainingSession,
+    private val deck: DeckRepository,
     private val time: TimeProvider,
 ) : ViewModel() {
 
@@ -50,18 +55,63 @@ class HomeViewModel @Inject constructor(
     private val refreshes = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private val now = time.nowTicks(refreshes).shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
     private val session = MutableStateFlow<TrainingPhase?>(null)
+    private val placement = MutableStateFlow<Placement?>(null)
 
     /** The running session alone, for tests that should not depend on the Room flows behind [state]. */
     internal val phase: StateFlow<TrainingPhase?> get() = session
 
     val state: StateFlow<HomeUiState> = combine(
-        now.flatMapLatest { words.observeDueCount(it) },
-        words.observeCounts(),
+        combine(now.flatMapLatest { words.observeDueCount(it) }, words.observeCounts(), ::Pair),
         now.flatMapLatest { stats.observeStreak(time.today()) },
         session,
-    ) { due, counts, streak, phase ->
-        HomeUiState(isLoading = false, dueCount = due, counts = counts, streakDays = streak.current, session = phase)
+        settings.settings,
+        placement,
+    ) { (due, counts), streak, phase, s, test ->
+        HomeUiState(
+            isLoading = false,
+            dueCount = due,
+            counts = counts,
+            streakDays = streak.current,
+            session = phase,
+            level = s.vocabLevel,
+            placement = test,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+
+    private var testWords: List<DeckWord> = emptyList()
+    private var testAnswers = mutableListOf<Boolean>()
+
+    fun chooseLevel(level: VocabLevel) {
+        placement.value = null
+        viewModelScope.launch { settings.setVocabLevel(level) }
+    }
+
+    /** Placement test: [PlacementTest.PER_LEVEL] random words of each level, easy to hard. */
+    fun startPlacementTest() {
+        viewModelScope.launch {
+            val sample = deck.sample(PlacementTest.PER_LEVEL)
+            testWords = VocabLevel.entries.flatMap { sample[it].orEmpty() }
+            testAnswers = mutableListOf()
+            if (testWords.isNotEmpty()) placement.value = Placement.Asking(testWords[0].term, 1, testWords.size)
+        }
+    }
+
+    fun answerPlacement(known: Boolean) {
+        if (placement.value !is Placement.Asking) return
+        testAnswers += known
+        val next = testAnswers.size
+        placement.value = if (next < testWords.size) {
+            Placement.Asking(testWords[next].term, next + 1, testWords.size)
+        } else {
+            val knownByLevel = testWords.zip(testAnswers).filter { it.second }.groupingBy { it.first.level }.eachCount()
+            Placement.Result(PlacementTest.level(knownByLevel), known = testAnswers.count { it }, total = testWords.size)
+        }
+    }
+
+    /** From the result back to the list of levels. */
+    fun choosePlacementOther() {
+        placement.value = null
+    }
 
     private var cards: List<TrainingCard> = emptyList()
     private var directions: List<CardDirection> = emptyList()
@@ -88,7 +138,8 @@ class HomeViewModel @Inject constructor(
                 celebrated = false
                 bestStreakAtStart = stats.observeStreak(time.today()).first().best
                 val direction = settings.settings.first().direction
-                cards = training.build(practice)
+                val level = settings.settings.first().vocabLevel
+                cards = training.build(practice, level)
                 directions = cards.map {
                     when (direction) {
                         Direction.EN_RU -> CardDirection.EN_RU
@@ -149,6 +200,7 @@ class HomeViewModel @Inject constructor(
                     learned = result.transition.learned,
                     example = card.example,
                     celebration = celebration,
+                    fromDeck = card.deck != null,
                 )
             } finally {
                 busy = false
@@ -164,7 +216,7 @@ class HomeViewModel @Inject constructor(
         busy = true
         viewModelScope.launch {
             try {
-                val transition = training.override(cards[index], result.logId, wasDue = !practice)
+                val transition = training.override(cards[index], result, wasDue = !practice)
                 correct++
                 if (session.value !== phase) return@launch
                 session.value = phase.copy(

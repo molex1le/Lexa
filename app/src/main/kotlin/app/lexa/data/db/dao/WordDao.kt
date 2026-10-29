@@ -28,6 +28,10 @@ interface WordDao {
     @Query("DELETE FROM words WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    /** Every term key, soft-deleted included: the deck never offers a word already in the list. */
+    @Query("SELECT termKey FROM words")
+    suspend fun allTermKeys(): List<String>
+
     @Query("UPDATE words SET isFavorite = :favorite WHERE id = :id")
     suspend fun setFavorite(id: Long, favorite: Boolean)
 

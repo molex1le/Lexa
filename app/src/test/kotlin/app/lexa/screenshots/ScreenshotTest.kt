@@ -241,6 +241,38 @@ class ScreenshotTest(private val dark: Boolean) {
 
     @Test fun trainingDone() = trainingSnap("training_done", TrainingPhase.Done(correct = 9, total = 12))
 
+    private val deckCard = TrainingCardUi(prompt = "reluctant", ipa = null, box = 0, expectsEnglish = false)
+
+    @Test fun trainingDeckQuestion() =
+        trainingSnap("training_deck_question", TrainingPhase.Question(deckCard, position = 1, total = 20, answer = "неохот"))
+
+    @Test fun trainingDeckWrong() = trainingSnap(
+        "training_deck_wrong",
+        TrainingPhase.Feedback(
+            card = deckCard, position = 1, total = 20, answer = "медленный", verdict = Verdict.WRONG,
+            correctAnswer = "неохотный, вынужденный", boxAfter = 1, learned = false, example = null, fromDeck = true,
+        ),
+    )
+
+    private fun homeSnap(name: String, state: HomeUiState) = snap(name) {
+        WithBar(TopLevel.TRAINING) { HomeScreen(state, {}, {}, {}, it) }
+    }
+
+    @Test fun levelPicker() = homeSnap("level_picker", HomeUiState(isLoading = false))
+
+    @Test fun placementAsking() =
+        homeSnap("placement_asking", HomeUiState(isLoading = false, placement = app.lexa.ui.home.Placement.Asking("thorough", 14, 25)))
+
+    @Test fun placementResult() = homeSnap(
+        "placement_result",
+        HomeUiState(isLoading = false, placement = app.lexa.ui.home.Placement.Result(app.lexa.domain.model.VocabLevel.B1, known = 15, total = 25)),
+    )
+
+    @Test fun trainingWithLevel() = homeSnap(
+        "training_level",
+        HomeUiState(isLoading = false, dueCount = 4, level = app.lexa.domain.model.VocabLevel.B1),
+    )
+
     @Test fun translator() = snap("translator") {
         WithBar(TopLevel.TRANSLATOR) { TranslatorScreen(TranslatorUiState(), {}, {}, {}, it) }
     }

@@ -3,7 +3,9 @@ package app.lexa.domain.training
 import app.lexa.domain.leitner.FixedTime
 import app.lexa.domain.leitner.LeitnerScheduler
 import app.lexa.domain.leitner.ReviewState
+import app.lexa.domain.model.VocabLevel
 import kotlin.test.Test
+import kotlin.test.assertNull
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
@@ -32,10 +34,30 @@ private class FakeTrainingRepository : TrainingRepository {
     }
 }
 
+private class FakeDeck : DeckRepository {
+    var words = emptyList<DeckWord>()
+    val known = mutableListOf<String>()
+    val added = mutableListOf<String>()
+    val undone = mutableListOf<Long>()
+
+    override suspend fun randomUnseen(level: VocabLevel, count: Int) = words.filter { it.level == level }.take(count)
+    override suspend fun sample(perLevel: Int) = words.groupBy { it.level }
+    override suspend fun markKnown(term: String) { known += term }
+    override suspend fun addAsNew(word: DeckWord, record: ReviewRecord): Pair<Long, Long> {
+        added += word.term
+        return 100L + added.size to 500L + added.size
+    }
+    override suspend fun undoAddAsNew(wordId: Long, term: String) {
+        undone += wordId
+        known += term
+    }
+}
+
 class TrainingSessionTest {
     private val time = FixedTime("2026-10-29T10:00:00Z")
     private val repo = FakeTrainingRepository()
-    private val session = TrainingSession(repo, LeitnerScheduler(time), time)
+    private val deck = FakeDeck()
+    private val session = TrainingSession(repo, deck, LeitnerScheduler(time), time, kotlin.random.Random(1))
 
     private fun card(box: Int = 1, mistakes: Int = 0) = TrainingCard(
         wordId = 7,
@@ -86,7 +108,7 @@ class TrainingSessionTest {
         assertEquals(ReviewState(1, time.nowMillis(), 2), repo.states.getValue(7))
         assertEquals(AnswerOutcome.WRONG, repo.log.single().outcome)
 
-        val t = session.override(c, r.logId, wasDue = true)
+        val t = session.override(c, r, wasDue = true)
         assertEquals(5, t.toBox)
         assertEquals(5, repo.states.getValue(7).box)
         assertEquals(1, repo.states.getValue(7).mistakesCount)
@@ -105,5 +127,58 @@ class TrainingSessionTest {
 
     @Test fun `blank answer is wrong`() = runTest {
         assertIs<CheckResult.Wrong>(session.answer(card(), CardDirection.EN_RU, "  ", true).check)
+    }
+
+    private val reluctant = DeckWord(VocabLevel.B2, "reluctant", "неохотный, вынужденный")
+
+    @Test fun `a session tops up due words with deck words of the level`() = runTest {
+        repo.due = List(3) { card() }
+        deck.words = List(30) { DeckWord(VocabLevel.B1, "w$it", "с$it") }
+        val cards = session.build(level = VocabLevel.B1)
+        assertEquals(TrainingSession.SESSION_SIZE, cards.size)
+        assertEquals(3, cards.count { it.deck == null })
+        assertEquals(TrainingSession.MAX_DUE, repo.askedLimit)
+    }
+
+    @Test fun `without a level only due words are trained`() = runTest {
+        repo.due = List(3) { card() }
+        deck.words = List(30) { DeckWord(VocabLevel.B1, "w$it", "с$it") }
+        assertTrue(session.build().all { it.deck == null })
+    }
+
+    @Test fun `practice ignores the deck`() = runTest {
+        repo.hard = List(2) { card() }
+        deck.words = List(30) { DeckWord(VocabLevel.B1, "w$it", "с$it") }
+        assertEquals(2, session.build(practice = true, level = VocabLevel.B1).size)
+    }
+
+    @Test fun `a known deck word is marked known and enters no box`() = runTest {
+        val c = with(TrainingSession) { reluctant.toCard() }
+        val r = session.answer(c, CardDirection.EN_RU, "неохотный", wasDue = false)
+        assertTrue(r.check.isCorrect)
+        assertEquals(listOf("reluctant"), deck.known)
+        assertEquals(TrainingSession.DECK_KNOWN, r.transition.toBox)
+        assertNull(r.newWordId)
+        assertTrue(repo.log.isEmpty())
+    }
+
+    @Test fun `an unknown deck word joins box 1 with one mistake and override removes it`() = runTest {
+        val c = with(TrainingSession) { reluctant.toCard() }
+        val r = session.answer(c, CardDirection.EN_RU, "медленный", wasDue = false)
+        assertIs<CheckResult.Wrong>(r.check)
+        assertEquals(listOf("reluctant"), deck.added)
+        assertEquals(1, r.transition.state.box)
+        assertEquals(1, r.transition.state.mistakesCount)
+        assertEquals(101L, r.newWordId)
+
+        val t = session.override(c, r, wasDue = false)
+        assertEquals(listOf(101L), deck.undone)
+        assertEquals(listOf("reluctant"), deck.known)
+        assertEquals(TrainingSession.DECK_KNOWN, t.toBox)
+    }
+
+    @Test fun `deck word answered in the other direction expects the term`() = runTest {
+        val c = with(TrainingSession) { DeckWord(VocabLevel.A1, "to eat", "есть, кушать").toCard() }
+        assertTrue(session.answer(c, CardDirection.RU_EN, "eat", wasDue = false).check.isCorrect)
     }
 }

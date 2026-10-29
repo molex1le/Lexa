@@ -66,6 +66,7 @@ private class FakeSettings(initial: Settings) : SettingsRepository {
     override suspend fun setReminderMinutes(minutes: Int) { flow.value = flow.value.copy(reminderMinutes = minutes) }
     override suspend fun setReminderEnabled(enabled: Boolean) { flow.value = flow.value.copy(reminderEnabled = enabled) }
     override suspend fun setWordSort(sort: WordSort) { flow.value = flow.value.copy(wordSort = sort) }
+    override suspend fun setVocabLevel(level: app.lexa.domain.model.VocabLevel) { flow.value = flow.value.copy(vocabLevel = level) }
 }
 
 private class FakeScheduler : ReminderScheduler {

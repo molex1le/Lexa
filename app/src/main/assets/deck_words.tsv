@@ -1,0 +1,614 @@
+A1	apple	яблоко
+A1	book	книга
+A1	house	дом
+A1	water	вода
+A1	friend	друг, подруга
+A1	family	семья
+A1	city	город
+A1	car	машина, автомобиль
+A1	dog	собака
+A1	cat	кошка, кот
+A1	bread	хлеб
+A1	milk	молоко
+A1	school	школа
+A1	teacher	учитель, учительница
+A1	student	студент, ученик
+A1	money	деньги
+A1	time	время
+A1	day	день
+A1	night	ночь
+A1	morning	утро
+A1	evening	вечер
+A1	week	неделя
+A1	year	год
+A1	month	месяц
+A1	window	окно
+A1	door	дверь
+A1	table	стол
+A1	chair	стул
+A1	bed	кровать
+A1	room	комната
+A1	kitchen	кухня
+A1	street	улица
+A1	shop	магазин
+A1	work	работа, работать
+A1	job	работа, должность
+A1	name	имя, название
+A1	child	ребёнок
+A1	man	мужчина, человек
+A1	woman	женщина
+A1	boy	мальчик
+A1	girl	девочка, девушка
+A1	mother	мать, мама
+A1	father	отец, папа
+A1	brother	брат
+A1	sister	сестра
+A1	head	голова
+A1	hand	рука, кисть
+A1	eye	глаз
+A1	tree	дерево
+A1	flower	цветок
+A1	sun	солнце
+A1	rain	дождь
+A1	snow	снег
+A1	sea	море
+A1	river	река
+A1	big	большой
+A1	small	маленький
+A1	good	хороший
+A1	bad	плохой
+A1	new	новый
+A1	old	старый
+A1	young	молодой
+A1	hot	горячий, жаркий
+A1	cold	холодный
+A1	happy	счастливый
+A1	sad	грустный, печальный
+A1	beautiful	красивый
+A1	easy	лёгкий, простой
+A1	difficult	трудный, сложный
+A1	fast	быстрый, быстро
+A1	slow	медленный
+A1	cheap	дешёвый
+A1	expensive	дорогой
+A1	red	красный
+A1	green	зелёный
+A1	blue	синий, голубой
+A1	white	белый
+A1	black	чёрный
+A1	to eat	есть, кушать
+A1	to drink	пить
+A1	to sleep	спать
+A1	to read	читать
+A1	to write	писать
+A1	to speak	говорить
+A1	to listen	слушать
+A1	to see	видеть
+A1	to go	идти, ехать
+A1	to come	приходить, прийти
+A1	to buy	покупать, купить
+A1	to sell	продавать
+A1	to open	открывать, открыть
+A1	to close	закрывать, закрыть
+A1	to help	помогать, помочь
+A1	to love	любить
+A1	to like	нравиться, любить
+A1	to want	хотеть
+A1	to know	знать
+A1	to think	думать
+A1	to live	жить
+A1	to play	играть
+A1	to cook	готовить
+A1	to walk	гулять, ходить
+A1	to run	бегать, бежать
+A1	to swim	плавать
+A1	to sing	петь
+A1	to dance	танцевать
+A1	to learn	учить, изучать
+A1	to give	давать, дать
+A1	to take	брать, взять
+A1	to wait	ждать
+A1	to ask	спрашивать, просить
+A1	to answer	отвечать
+A1	weather	погода
+A1	breakfast	завтрак
+A1	dinner	ужин, обед
+A1	lunch	обед
+A1	shoes	обувь, туфли
+A1	shirt	рубашка
+A1	ticket	билет
+A1	train	поезд
+A1	airport	аэропорт
+A2	journey	поездка, путешествие
+A2	luggage	багаж
+A2	neighbour	сосед
+A2	advice	совет
+A2	invitation	приглашение
+A2	holiday	отпуск, праздник, каникулы
+A2	weekend	выходные
+A2	appointment	встреча, запись, приём
+A2	library	библиотека
+A2	museum	музей
+A2	village	деревня, село
+A2	country	страна, деревня
+A2	mountain	гора
+A2	island	остров
+A2	forest	лес
+A2	field	поле
+A2	bridge	мост
+A2	square	площадь, квадрат
+A2	building	здание
+A2	floor	пол, этаж
+A2	wall	стена
+A2	roof	крыша
+A2	garden	сад
+A2	price	цена
+A2	bill	счёт
+A2	wallet	кошелёк, бумажник
+A2	key	ключ
+A2	pocket	карман
+A2	umbrella	зонт, зонтик
+A2	health	здоровье
+A2	illness	болезнь
+A2	medicine	лекарство, медицина
+A2	pain	боль
+A2	fever	жар, температура, лихорадка
+A2	doctor	врач, доктор
+A2	nurse	медсестра
+A2	hospital	больница
+A2	accident	авария, несчастный случай
+A2	danger	опасность
+A2	safe	безопасный, сейф
+A2	busy	занятой, занят
+A2	free	свободный, бесплатный
+A2	empty	пустой
+A2	full	полный
+A2	quiet	тихий
+A2	loud	громкий
+A2	clean	чистый, убирать
+A2	dirty	грязный
+A2	tired	уставший, усталый
+A2	hungry	голодный
+A2	thirsty	испытывающий жажду
+A2	angry	злой, сердитый
+A2	afraid	испуганный, боящийся
+A2	surprised	удивлённый
+A2	bored	скучающий
+A2	careful	осторожный, внимательный
+A2	strange	странный
+A2	famous	знаменитый, известный
+A2	popular	популярный
+A2	modern	современный
+A2	ancient	древний
+A2	early	ранний, рано
+A2	late	поздний, поздно
+A2	soon	скоро
+A2	already	уже
+A2	still	всё ещё
+A2	never	никогда
+A2	always	всегда
+A2	usually	обычно
+A2	sometimes	иногда
+A2	often	часто
+A2	together	вместе
+A2	alone	один, в одиночестве
+A2	almost	почти
+A2	enough	достаточно
+A2	to arrive	прибывать, приезжать
+A2	to leave	уезжать, уходить, оставлять
+A2	to return	возвращаться, возвращать
+A2	to travel	путешествовать
+A2	to book	бронировать, заказывать
+A2	to borrow	брать взаймы, занимать
+A2	to lend	одалживать, давать взаймы
+A2	to pay	платить
+A2	to spend	тратить, проводить
+A2	to save	сохранять, экономить, спасать
+A2	to lose	терять, проигрывать
+A2	to find	находить, найти
+A2	to forget	забывать
+A2	to remember	помнить, вспоминать
+A2	to try	пытаться, пробовать
+A2	to choose	выбирать
+A2	to decide	решать
+A2	to agree	соглашаться
+A2	to explain	объяснять
+A2	to describe	описывать
+A2	to invite	приглашать
+A2	to visit	посещать, навещать
+A2	to repair	чинить, ремонтировать
+A2	to build	строить
+A2	to carry	нести, носить
+A2	to break	ломать, разбивать
+A2	to fall	падать
+A2	to hurt	болеть, ранить, причинять боль
+A2	to wash	мыть, стирать
+A2	to wear	носить, быть одетым
+A2	to win	выигрывать, побеждать
+A2	to grow	расти, выращивать
+A2	to change	менять, изменять
+A2	to hope	надеяться
+A2	to worry	волноваться, беспокоиться
+A2	to laugh	смеяться
+A2	to smile	улыбаться
+A2	to cry	плакать
+A2	to shout	кричать
+A2	to hate	ненавидеть
+A2	to share	делиться
+A2	to send	отправлять, посылать
+A2	to receive	получать
+A2	to fill	заполнять, наполнять
+A2	to finish	заканчивать
+A2	to begin	начинать
+A2	to turn	поворачивать
+A2	to push	толкать
+A2	to pull	тянуть
+A2	newspaper	газета
+A2	message	сообщение
+A2	sentence	предложение
+A2	question	вопрос
+A2	mistake	ошибка
+A2	reason	причина
+B1	achievement	достижение
+B1	opportunity	возможность
+B1	experience	опыт, впечатление
+B1	knowledge	знание, знания
+B1	environment	окружающая среда, среда
+B1	pollution	загрязнение
+B1	government	правительство
+B1	society	общество
+B1	population	население
+B1	education	образование
+B1	research	исследование
+B1	evidence	доказательство, улика
+B1	argument	спор, довод, аргумент
+B1	opinion	мнение
+B1	attitude	отношение, позиция
+B1	behaviour	поведение
+B1	relationship	отношения, связь
+B1	responsibility	ответственность
+B1	permission	разрешение
+B1	purpose	цель, назначение
+B1	solution	решение
+B1	issue	вопрос, проблема
+B1	situation	ситуация, положение
+B1	condition	условие, состояние
+B1	quality	качество
+B1	quantity	количество
+B1	amount	количество, сумма
+B1	average	средний, среднее
+B1	advantage	преимущество
+B1	disadvantage	недостаток
+B1	benefit	польза, выгода
+B1	damage	ущерб, вред, повреждать
+B1	effect	эффект, следствие
+B1	influence	влияние, влиять
+B1	support	поддержка, поддерживать
+B1	effort	усилие
+B1	pressure	давление
+B1	success	успех
+B1	failure	неудача, провал
+B1	goal	цель, гол
+B1	skill	навык, умение
+B1	ability	способность
+B1	career	карьера
+B1	salary	зарплата
+B1	employee	сотрудник, работник
+B1	employer	работодатель
+B1	customer	клиент, покупатель
+B1	competition	соревнование, конкуренция, конкурс
+B1	advertisement	реклама, объявление
+B1	audience	аудитория, зрители
+B1	ceremony	церемония
+B1	celebration	празднование
+B1	tradition	традиция
+B1	culture	культура
+B1	religion	религия
+B1	freedom	свобода
+B1	crime	преступление
+B1	law	закон, право
+B1	journalist	журналист
+B1	politician	политик
+B1	scientist	учёный
+B1	available	доступный, свободный
+B1	necessary	необходимый
+B1	possible	возможный
+B1	obvious	очевидный
+B1	serious	серьёзный
+B1	similar	похожий
+B1	different	другой, разный
+B1	certain	уверенный, определённый
+B1	confident	уверенный
+B1	responsible	ответственный
+B1	reliable	надёжный
+B1	honest	честный
+B1	polite	вежливый
+B1	rude	грубый
+B1	generous	щедрый
+B1	selfish	эгоистичный
+B1	jealous	ревнивый, завистливый
+B1	anxious	тревожный, обеспокоенный
+B1	embarrassed	смущённый
+B1	disappointed	разочарованный
+B1	curious	любопытный
+B1	brave	храбрый, смелый
+B1	lazy	ленивый
+B1	smart	умный
+B1	wealthy	богатый, состоятельный
+B1	to achieve	достигать
+B1	to improve	улучшать
+B1	to increase	увеличивать, расти
+B1	to reduce	уменьшать, сокращать
+B1	to prevent	предотвращать
+B1	to avoid	избегать
+B1	to require	требовать
+B1	to provide	предоставлять, обеспечивать
+B1	to suggest	предлагать
+B1	to recommend	рекомендовать, советовать
+B1	to compare	сравнивать
+B1	to consider	рассматривать, считать
+B1	to expect	ожидать
+B1	to realise	осознавать, понимать
+B1	to recognise	узнавать, признавать
+B1	to admit	признавать, признаваться
+B1	to deny	отрицать
+B1	to complain	жаловаться
+B1	to apologise	извиняться
+B1	to persuade	убеждать, уговаривать
+B1	to convince	убеждать
+B1	to encourage	поощрять, ободрять
+B1	to manage	управлять, справляться
+B1	to organise	организовывать
+B1	to develop	развивать, разрабатывать
+B1	to produce	производить
+B1	to destroy	разрушать, уничтожать
+B1	to protect	защищать
+B1	to rescue	спасать
+B1	to survive	выживать
+B1	to measure	измерять
+B1	to attach	прикреплять
+B1	to deliver	доставлять
+B1	to replace	заменять
+B1	to involve	вовлекать, включать
+B1	to belong	принадлежать
+B1	to depend	зависеть
+B1	to rely	полагаться
+B2	commute	ездить на работу, поездка на работу
+B2	reluctant	неохотный, вынужденный
+B2	thorough	тщательный, основательный
+B2	eager	стремящийся, жаждущий, нетерпеливый
+B2	wander	бродить, странствовать
+B2	abundant	обильный, изобильный
+B2	sincere	искренний
+B2	consequence	последствие
+B2	assumption	предположение, допущение
+B2	approach	подход, приближаться
+B2	awareness	осведомлённость, осознание
+B2	bias	предвзятость, предубеждение
+B2	breakthrough	прорыв
+B2	burden	бремя, ноша
+B2	circumstance	обстоятельство
+B2	commitment	обязательство, преданность
+B2	compromise	компромисс
+B2	contribution	вклад
+B2	controversy	спор, разногласия, полемика
+B2	crisis	кризис
+B2	debate	дебаты, спор
+B2	decline	спад, снижение, снижаться
+B2	demand	спрос, требование, требовать
+B2	feature	особенность, черта, функция
+B2	guidance	руководство, наставление
+B2	household	домохозяйство, домашний
+B2	insight	понимание, проницательность
+B2	mood	настроение
+B2	outcome	результат, исход
+B2	perspective	перспектива, точка зрения
+B2	phenomenon	явление, феномен
+B2	priority	приоритет
+B2	prospect	перспектива
+B2	requirement	требование
+B2	resource	ресурс
+B2	shortage	нехватка, дефицит
+B2	strategy	стратегия
+B2	tendency	тенденция, склонность
+B2	threat	угроза
+B2	trend	тенденция, тренд
+B2	accurate	точный
+B2	adequate	достаточный, адекватный
+B2	ambitious	амбициозный, честолюбивый
+B2	apparent	очевидный, явный, кажущийся
+B2	appropriate	подходящий, уместный
+B2	arrogant	высокомерный, надменный
+B2	cautious	осторожный
+B2	competent	компетентный, умелый
+B2	considerable	значительный
+B2	consistent	последовательный, постоянный
+B2	crucial	решающий, ключевой
+B2	deliberate	намеренный, обдуманный
+B2	efficient	эффективный, производительный
+B2	essential	необходимый, существенный
+B2	evident	очевидный
+B2	flexible	гибкий
+B2	genuine	подлинный, настоящий, искренний
+B2	gradual	постепенный
+B2	inevitable	неизбежный
+B2	keen	увлечённый, острый, горячий
+B2	vague	смутный, расплывчатый
+B2	vivid	яркий, живой
+B2	modest	скромный
+B2	mutual	взаимный
+B2	numerous	многочисленный
+B2	precise	точный
+B2	rare	редкий
+B2	relevant	актуальный, уместный, относящийся к делу
+B2	remarkable	замечательный, выдающийся
+B2	reasonable	разумный, приемлемый
+B2	severe	суровый, тяжёлый, строгий
+B2	subtle	тонкий, едва уловимый
+B2	sufficient	достаточный
+B2	temporary	временный
+B2	tough	жёсткий, трудный, крепкий
+B2	to acknowledge	признавать
+B2	to acquire	приобретать
+B2	to adapt	приспосабливаться, адаптировать
+B2	to allocate	выделять, распределять
+B2	to anticipate	предвидеть, ожидать
+B2	to assess	оценивать
+B2	to assume	предполагать
+B2	to attain	достигать
+B2	to claim	утверждать, заявлять, требовать
+B2	to collapse	рушиться, обрушиваться
+B2	to comply	соблюдать, подчиняться
+B2	to conceal	скрывать, прятать
+B2	to concede	уступать, признавать
+B2	to confront	противостоять, сталкиваться
+B2	to cope	справляться
+B2	to deceive	обманывать
+B2	to dedicate	посвящать
+B2	to emerge	появляться, возникать
+B2	to emphasise	подчёркивать
+B2	to enhance	улучшать, усиливать
+B2	to ensure	обеспечивать, гарантировать
+B2	to estimate	оценивать
+B2	to evaluate	оценивать
+B2	to exaggerate	преувеличивать
+B2	to exceed	превышать
+B2	to exploit	эксплуатировать, использовать
+B2	to hesitate	колебаться, сомневаться
+B2	to ignore	игнорировать
+B2	to imply	подразумевать
+B2	to impose	навязывать, налагать
+B2	to interfere	вмешиваться
+B2	to justify	оправдывать
+B2	to neglect	пренебрегать
+B2	to obtain	получать
+B2	to occur	происходить, случаться
+B2	to overcome	преодолевать
+B2	to pursue	преследовать, добиваться
+B2	to reveal	раскрывать, обнаруживать
+B2	to struggle	бороться, с трудом справляться
+B2	to sustain	поддерживать, выдерживать
+B2	to undermine	подрывать
+B2	to withdraw	снимать, отзывать, отступать
+B2	to squander	растрачивать, транжирить
+B2	to thrive	процветать, преуспевать
+B2	to yield	уступать, приносить
+C1	ubiquitous	вездесущий, повсеместный
+C1	meticulous	дотошный, тщательный
+C1	ambiguous	двусмысленный, неоднозначный
+C1	tenacious	упорный, цепкий
+C1	pragmatic	прагматичный
+C1	eloquent	красноречивый
+C1	frugal	бережливый, экономный
+C1	gregarious	общительный
+C1	candid	откровенный, искренний
+C1	complacent	самодовольный, благодушный
+C1	conspicuous	заметный, бросающийся в глаза
+C1	diligent	усердный, прилежный
+C1	elusive	неуловимый, ускользающий
+C1	feasible	осуществимый, выполнимый
+C1	formidable	грозный, внушительный
+C1	futile	тщетный, бесполезный
+C1	impartial	беспристрастный
+C1	indispensable	незаменимый, необходимый
+C1	inherent	присущий, неотъемлемый
+C1	intricate	запутанный, сложный
+C1	lucrative	прибыльный, доходный
+C1	mundane	обыденный, приземлённый
+C1	notorious	печально известный, пресловутый
+C1	obsolete	устаревший
+C1	plausible	правдоподобный
+C1	prevalent	распространённый, преобладающий
+C1	profound	глубокий
+C1	prudent	благоразумный, осмотрительный
+C1	resilient	стойкий, устойчивый, упругий
+C1	scrupulous	щепетильный, добросовестный
+C1	spontaneous	спонтанный, непроизвольный
+C1	superficial	поверхностный
+C1	tedious	утомительный, скучный
+C1	trivial	незначительный, тривиальный
+C1	vulnerable	уязвимый
+C1	wary	настороженный, осторожный
+C1	zealous	усердный, рьяный
+C1	adamant	непреклонный
+C1	benevolent	доброжелательный, благосклонный
+C1	cumbersome	громоздкий
+C1	detrimental	вредный, пагубный
+C1	discreet	сдержанный, тактичный
+C1	exquisite	изысканный, утончённый
+C1	fervent	пылкий, горячий
+C1	gullible	доверчивый, легковерный
+C1	immaculate	безупречный, безукоризненный
+C1	incessant	непрестанный, непрерывный
+C1	lethargic	вялый, апатичный
+C1	nonchalant	беспечный, невозмутимый
+C1	opaque	непрозрачный, непонятный
+C1	ostentatious	показной, хвастливый
+C1	pervasive	всепроникающий, распространённый
+C1	precarious	шаткий, ненадёжный
+C1	reticent	сдержанный, скрытный
+C1	sporadic	спорадический, единичный
+C1	stringent	строгий, жёсткий
+C1	tentative	предварительный, неуверенный
+C1	unprecedented	беспрецедентный
+C1	versatile	разносторонний, универсальный
+C1	whimsical	причудливый, прихотливый
+C1	aftermath	последствия
+C1	anecdote	анекдот, случай из жизни
+C1	animosity	враждебность, неприязнь
+C1	consensus	консенсус, согласие
+C1	dilemma	дилемма
+C1	discrepancy	несоответствие, расхождение
+C1	endeavour	стремление, усилие, попытка
+C1	epitome	воплощение, олицетворение
+C1	fallacy	заблуждение, ошибка
+C1	hindrance	помеха, препятствие
+C1	hypothesis	гипотеза
+C1	impetus	импульс, толчок
+C1	incentive	стимул, побуждение
+C1	integrity	честность, целостность
+C1	juxtaposition	сопоставление, соседство
+C1	leverage	рычаг, влияние
+C1	misconception	заблуждение, неправильное представление
+C1	nuance	нюанс, оттенок
+C1	paradigm	парадигма
+C1	predicament	затруднительное положение
+C1	premise	предпосылка
+C1	repercussion	последствие
+C1	scrutiny	тщательное изучение, проверка
+C1	setback	неудача, препятствие
+C1	stigma	клеймо, позор
+C1	trepidation	трепет, тревога
+C1	upheaval	переворот, потрясение
+C1	whereabouts	местонахождение
+C1	serendipity	счастливая случайность, интуитивная прозорливость
+C1	to alleviate	облегчать, смягчать
+C1	to ascertain	устанавливать, выяснять
+C1	to bolster	поддерживать, укреплять
+C1	to circumvent	обходить
+C1	to coerce	принуждать
+C1	to corroborate	подтверждать
+C1	to curtail	сокращать, урезать
+C1	to deter	удерживать, сдерживать
+C1	to disseminate	распространять
+C1	to elicit	вызывать, выявлять
+C1	to embellish	приукрашивать, украшать
+C1	to exacerbate	усугублять, обострять
+C1	to foster	поощрять, способствовать, воспитывать
+C1	to hamper	мешать, затруднять
+C1	to instigate	подстрекать, инициировать
+C1	to mitigate	смягчать, уменьшать
+C1	to obliterate	уничтожать, стирать
+C1	to procrastinate	откладывать, тянуть время
+C1	to reconcile	примирять, согласовывать
+C1	to relinquish	отказываться, уступать
+C1	to scrutinise	тщательно изучать
+C1	to substantiate	обосновывать, подтверждать
+C1	to supersede	заменять, вытеснять
+C1	to thwart	срывать, препятствовать
+C1	to vindicate	оправдывать, доказывать правоту
+C1	to waver	колебаться
+C1	to wield	владеть, обладать
+C1	to bewilder	озадачивать, сбивать с толку
+C1	to dwindle	сокращаться, убывать
+C1	to falter	запинаться, колебаться

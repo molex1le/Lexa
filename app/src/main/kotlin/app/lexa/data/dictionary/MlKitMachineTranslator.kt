@@ -62,7 +62,8 @@ class MlKitMachineTranslator @Inject constructor() : MachineTranslator {
         block()
     } catch (e: CancellationException) {
         throw e
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        android.util.Log.w("Lexa.MlKit", "ML Kit call failed", e)
         fallback
     }
 }

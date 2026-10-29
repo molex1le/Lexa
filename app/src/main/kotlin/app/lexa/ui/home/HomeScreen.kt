@@ -1,5 +1,7 @@
 package app.lexa.ui.home
 
+import app.lexa.domain.model.VocabLevel
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +35,9 @@ data class HomeUiState(
     val streakDays: Int = 0,
     /** A running training session; null shows the tab's overview. */
     val session: TrainingPhase? = null,
+    /** Null until the learner picks a level or takes the test: the tab asks for it first. */
+    val level: VocabLevel? = null,
+    val placement: Placement? = null,
 ) {
     val hasWords: Boolean get() = counts.learned + counts.learning + counts.new > 0
 }
@@ -54,6 +59,12 @@ fun HomeRoute(
         onOpenSettings = onOpenSettings,
         onTranslate = onTranslate,
         onStart = { viewModel.start() },
+        level = LevelActions(
+            onChoose = viewModel::chooseLevel,
+            onTakeTest = viewModel::startPlacementTest,
+            onAnswer = viewModel::answerPlacement,
+            onChooseOther = viewModel::choosePlacementOther,
+        ),
         training = TrainingActions(
             onAnswerChange = viewModel::onAnswerChange,
             onCheck = viewModel::check,
@@ -65,6 +76,14 @@ fun HomeRoute(
     )
 }
 
+/** Level choice and placement test callbacks. */
+class LevelActions(
+    val onChoose: (VocabLevel) -> Unit = {},
+    val onTakeTest: () -> Unit = {},
+    val onAnswer: (Boolean) -> Unit = {},
+    val onChooseOther: () -> Unit = {},
+)
+
 /** «Тренировка» tab: how many words are due today, the one action, and a one-line summary. */
 @Composable
 fun HomeScreen(
@@ -74,9 +93,14 @@ fun HomeScreen(
     onStart: () -> Unit,
     modifier: Modifier = Modifier,
     training: TrainingActions = TrainingActions(),
+    level: LevelActions = LevelActions(),
 ) {
     state.session?.let {
         TrainingContent(it, training, modifier)
+        return
+    }
+    state.placement?.let {
+        PlacementContent(it, level.onAnswer, level.onChoose, level.onChooseOther, modifier)
         return
     }
     val colors = LexaTheme.colors
@@ -86,26 +110,28 @@ fun HomeScreen(
             .background(colors.paper)
             .verticalScroll(rememberScrollState()),
     ) {
+        // Before a level is chosen there is nothing to repeat yet: the tab just names itself.
+        val picking = !state.isLoading && state.level == null
         ScreenHeader(
-            title = stringResource(R.string.training_due_title),
+            title = stringResource(if (picking) R.string.nav_training else R.string.training_due_title),
             trailing = {
                 LexaIconButton(R.drawable.ic_settings, stringResource(R.string.action_open_settings), onOpenSettings)
             },
-            titleEnd = {
-                Text(state.dueCount.toString(), style = LexaTheme.type.figure, color = colors.ink)
+            titleEnd = if (picking) null else {
+                { Text(state.dueCount.toString(), style = LexaTheme.type.figure, color = colors.ink) }
             },
         )
         Spacer(Modifier.height(Spacing.xl))
         Column(Modifier.padding(horizontal = Spacing.gutter)) {
+            val chosen = state.level
             when {
                 state.isLoading -> Unit
-                !state.hasWords -> EmptyState(
-                    message = stringResource(R.string.training_empty),
-                    actionLabel = stringResource(R.string.action_translate_word),
-                    onAction = onTranslate,
-                )
-                state.dueCount == 0 -> EmptyState(message = stringResource(R.string.training_done_today))
-                else -> MarkerButton(stringResource(R.string.training_start), onClick = onStart)
+                chosen == null -> LevelPicker(level.onChoose, level.onTakeTest)
+                else -> {
+                    Text(stringResource(R.string.training_level_line, chosen.name), style = LexaTheme.type.body, color = colors.pencil)
+                    Spacer(Modifier.height(Spacing.m))
+                    MarkerButton(stringResource(R.string.training_start), onClick = onStart)
+                }
             }
             Spacer(Modifier.height(Spacing.xl))
             Text(
