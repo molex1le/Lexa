@@ -274,6 +274,14 @@ private fun SessionDone(phase: TrainingPhase.Done, actions: TrainingActions) {
         style = LexaTheme.type.heading,
         color = LexaTheme.colors.ink,
     )
+    Spacer(Modifier.height(Spacing.s))
+    val wrong = phase.total - phase.correct
+    Text(
+        if (wrong > 0) pluralStringResource(R.plurals.training_returned, wrong, wrong)
+        else stringResource(R.string.training_all_moved),
+        style = LexaTheme.type.body,
+        color = LexaTheme.colors.pencil,
+    )
     Spacer(Modifier.height(Spacing.l))
     MarkerButton(stringResource(R.string.training_finish), onClick = actions.onFinish)
 }
