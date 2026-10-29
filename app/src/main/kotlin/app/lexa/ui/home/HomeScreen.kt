@@ -30,6 +30,8 @@ data class HomeUiState(
     val dueCount: Int = 0,
     val counts: WordCounts = WordCounts(),
     val streakDays: Int = 0,
+    /** A running training session; null shows the tab's overview. */
+    val session: TrainingPhase? = null,
 ) {
     val hasWords: Boolean get() = counts.learned + counts.learning + counts.new > 0
 }
@@ -41,7 +43,19 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    HomeScreen(state = state, onOpenSettings = onOpenSettings, onTranslate = onTranslate, onStart = {})
+    HomeScreen(
+        state = state,
+        onOpenSettings = onOpenSettings,
+        onTranslate = onTranslate,
+        onStart = { viewModel.start() },
+        training = TrainingActions(
+            onAnswerChange = viewModel::onAnswerChange,
+            onCheck = viewModel::check,
+            onOverride = viewModel::overrideAsTypo,
+            onNext = viewModel::next,
+            onFinish = viewModel::finish,
+        ),
+    )
 }
 
 /** «Тренировка» tab: how many words are due today, the one action, and a one-line summary. */
@@ -52,7 +66,12 @@ fun HomeScreen(
     onTranslate: () -> Unit,
     onStart: () -> Unit,
     modifier: Modifier = Modifier,
+    training: TrainingActions = TrainingActions(),
 ) {
+    state.session?.let {
+        TrainingContent(it, training, modifier)
+        return
+    }
     val colors = LexaTheme.colors
     Column(
         modifier

@@ -19,6 +19,21 @@
     <string name="training_empty">Пока пусто. Переведи первое слово&#160;– оно появится здесь</string>
     <string name="training_done_today">На сегодня всё. Следующие слова вернутся по расписанию&#160;– загляни завтра</string>
     <string name="training_start">Начать повторение</string>
+    <string name="training_progress">%1$d из %2$d</string>
+    <string name="training_answer_label">Ответ</string>
+    <string name="training_hint_russian">Перевод на русский</string>
+    <string name="training_hint_english">Слово по-английски</string>
+    <string name="training_check">Проверить</string>
+    <string name="training_next">Дальше</string>
+    <string name="training_correct_box">Верно · коробка %1$d из 5</string>
+    <string name="training_correct_learned">Верно · слово выучено</string>
+    <string name="training_typo">Засчитано с опечаткой. Правильно:</string>
+    <string name="training_your_answer_wrong">Твой ответ: %1$s, неверно</string>
+    <string name="training_back_to_new">Слово вернулось в «Новые»</string>
+    <string name="training_override">Я знал, это опечатка</string>
+    <string name="training_overridden_box">Засчитано · коробка %1$d из 5</string>
+    <string name="training_overridden_learned">Засчитано · слово выучено</string>
+    <string name="training_finish">Закончить</string>
     <string name="training_summary">Выучено %1$s · Серия %2$s</string>
 
     <!-- Translator -->
@@ -130,5 +145,11 @@
         <item quantity="few">дня подряд</item>
         <item quantity="many">дней подряд</item>
         <item quantity="other">дня подряд</item>
+    </plurals>
+    <plurals name="training_score">
+        <item quantity="one">Верно %1$d из %2$d слова</item>
+        <item quantity="few">Верно %1$d из %2$d слов</item>
+        <item quantity="many">Верно %1$d из %2$d слов</item>
+        <item quantity="other">Верно %1$d из %2$d слова</item>
     </plurals>
 </resources>

@@ -5,6 +5,9 @@ import app.lexa.ui.history.HistoryScreen
 import app.lexa.ui.history.HistoryUiState
 import app.lexa.ui.home.HomeScreen
 import app.lexa.ui.home.HomeUiState
+import app.lexa.ui.home.TrainingCardUi
+import app.lexa.ui.home.TrainingPhase
+import app.lexa.ui.home.Verdict
 import app.lexa.ui.lists.ListsScreen
 import app.lexa.ui.lists.ListsUiState
 import app.lexa.ui.navigation.LexaBottomBar
@@ -89,6 +92,35 @@ class ScreenshotTest(private val dark: Boolean) {
     @Test fun training() = snap("training") {
         WithBar(TopLevel.TRAINING) { HomeScreen(HomeUiState(isLoading = false), {}, {}, {}, it) }
     }
+
+    private val commuteCard = TrainingCardUi(prompt = "commute", ipa = "/kəˈmjuːt/", box = 2, expectsEnglish = false)
+
+    private fun feedback(verdict: Verdict, answer: String, boxAfter: Int) = TrainingPhase.Feedback(
+        card = commuteCard,
+        position = 3,
+        total = 12,
+        answer = answer,
+        verdict = verdict,
+        correctAnswer = "ездить на работу, поездка на работу",
+        boxAfter = boxAfter,
+        learned = false,
+        example = SampleCommute.examples.first(),
+    )
+
+    private fun trainingSnap(name: String, phase: TrainingPhase) = snap(name) {
+        WithBar(TopLevel.TRAINING) { HomeScreen(HomeUiState(isLoading = false, session = phase), {}, {}, {}, it) }
+    }
+
+    @Test fun trainingQuestion() =
+        trainingSnap("training_question", TrainingPhase.Question(commuteCard, position = 3, total = 12, answer = "ездить на раб"))
+
+    @Test fun trainingFeedbackCorrect() =
+        trainingSnap("training_feedback_correct", feedback(Verdict.CORRECT, "ездить на работу", boxAfter = 3))
+
+    @Test fun trainingFeedbackWrong() =
+        trainingSnap("training_feedback_wrong", feedback(Verdict.WRONG, "путешествовать", boxAfter = 1))
+
+    @Test fun trainingDone() = trainingSnap("training_done", TrainingPhase.Done(correct = 9, total = 12))
 
     @Test fun translator() = snap("translator") {
         WithBar(TopLevel.TRANSLATOR) { TranslatorScreen(TranslatorUiState(), {}, {}, {}, it) }
