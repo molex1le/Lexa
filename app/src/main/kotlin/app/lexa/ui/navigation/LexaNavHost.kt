@@ -23,6 +23,7 @@ import app.lexa.ui.settings.SettingsRoute as SettingsScreenRoute
 import app.lexa.ui.stats.StatsRoute as StatsScreenRoute
 import app.lexa.ui.theme.LexaTheme
 import app.lexa.ui.translator.TranslatorRoute as TranslatorScreenRoute
+import app.lexa.ui.translator.TranslatorViewModel
 import app.lexa.ui.word.WordRoute as WordScreenRoute
 
 private fun NavDestination.topLevel(): TopLevel? = hierarchy.firstNotNullOfOrNull { dest ->
@@ -88,8 +89,11 @@ fun LexaNavHost(navController: NavHostController = rememberNavController()) {
                 HistoryScreenRoute(
                     onBack = navController::popBackStack,
                     onTranslate = { query ->
+                        // The translator below picks the query up from its SavedStateHandle and opens it (from cache).
+                        if (query != null) {
+                            navController.previousBackStackEntry?.savedStateHandle?.set(TranslatorViewModel.PICKED_QUERY, query)
+                        }
                         navController.popBackStack()
-                        if (query != null) navController.navigate(TranslatorRoute(query)) { launchSingleTop = true }
                     },
                 )
             }

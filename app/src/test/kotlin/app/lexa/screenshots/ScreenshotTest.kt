@@ -17,7 +17,15 @@ import app.lexa.ui.stats.StatsUiState
 import app.lexa.ui.theme.LexaTheme
 import app.lexa.ui.theme.TypeSpecimen
 import app.lexa.ui.translator.TranslatorScreen
+import app.lexa.ui.translator.TranslatorPhase
 import app.lexa.ui.translator.TranslatorUiState
+import app.lexa.domain.model.Example
+import app.lexa.domain.model.ExampleOrigin
+import app.lexa.domain.model.PartOfSpeech
+import app.lexa.domain.model.Sense
+import app.lexa.domain.model.Translation
+import app.lexa.domain.repository.LookupError
+import org.junit.Assume.assumeFalse
 import app.lexa.ui.word.WordScreen
 import app.lexa.ui.word.WordUiState
 import androidx.compose.foundation.layout.Column
@@ -29,6 +37,22 @@ import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+
+private val SampleCommute = Translation(
+    term = "commute",
+    ipa = "/kəˈmjuːt/",
+    audioUrl = "https://api.dictionaryapi.dev/media/pronunciations/en/commute-uk.mp3",
+    senses = listOf(
+        Sense(PartOfSpeech.VERB, listOf("ездить на работу"), "Регулярно ездить из дома на работу или учёбу и обратно."),
+        Sense(PartOfSpeech.NOUN, listOf("поездка на работу"), "Регулярная поездка на работу или учёбу."),
+    ),
+    definition = "To regularly travel from one's home to one's workplace or school, or vice versa.",
+    examples = listOf(
+        Example("I commute to work by bicycle.", "Я езжу на работу на велосипеде.", ExampleOrigin.TATOEBA),
+        Example("I commute from Brooklyn to Manhattan by bicycle.", "Я езжу из Бруклина на Манхэттен на велосипеде.", ExampleOrigin.MACHINE),
+    ),
+    synonyms = listOf("travel", "journey", "shuttle"),
+)
 
 /**
  * Every phase 1 screen in its empty state, light and dark, on a 360dp phone at font scale 1.0.
@@ -68,6 +92,31 @@ class ScreenshotTest(private val dark: Boolean) {
 
     @Test fun translator() = snap("translator") {
         WithBar(TopLevel.TRANSLATOR) { TranslatorScreen(TranslatorUiState(), {}, {}, {}, it) }
+    }
+
+    @Test fun translatorResult() = snap("translator_result") {
+        WithBar(TopLevel.TRANSLATOR) {
+            TranslatorScreen(
+                TranslatorUiState(
+                    query = "commute",
+                    phase = TranslatorPhase.Result(SampleCommute, "commute", wordId = 1, isFavorite = false, justAdded = false),
+                ),
+                {}, {}, {}, it,
+            )
+        }
+    }
+
+    /** Light only (phase 2 scope). */
+    @Test fun translatorError() {
+        assumeFalse(dark)
+        snap("translator_error") {
+            WithBar(TopLevel.TRANSLATOR) {
+                TranslatorScreen(
+                    TranslatorUiState(query = "commute", phase = TranslatorPhase.Error(LookupError.NO_NETWORK)),
+                    {}, {}, {}, it,
+                )
+            }
+        }
     }
 
     @Test fun wordsNew() = snap("words_new") {

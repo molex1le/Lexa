@@ -28,6 +28,36 @@
     <string name="translator_action">Перевести</string>
     <string name="translator_empty">Вставь незнакомое слово&#160;– Lexa покажет перевод, транскрипцию и примеры и сразу добавит его в «Новые слова»</string>
     <string name="translator_recent">Недавние</string>
+    <string name="translator_loading">Ищу перевод…</string>
+    <string name="translator_downloading_model">Скачиваю русскую модель перевода, около 30&#160;МБ. Это нужно один раз&#160;– потом перевод работает без интернета</string>
+    <string name="translator_added">Добавлено в новые слова</string>
+    <string name="action_undo">Отменить</string>
+    <string name="action_add_favorite">Добавить в избранное</string>
+    <string name="action_remove_favorite">Убрать из избранного</string>
+    <string name="action_pronounce">Произнести</string>
+    <string name="action_translate_synonym">Перевести синоним</string>
+    <string name="translator_definition">Значение</string>
+    <string name="translator_examples">Примеры</string>
+    <string name="translator_synonyms">Синонимы</string>
+    <string name="translator_machine">машинный перевод</string>
+    <string name="translator_tatoeba">Tatoeba</string>
+    <string name="error_no_network">Нет интернета, а этого слова ещё нет среди сохранённых переводов</string>
+    <string name="error_no_network_hint">Подключись к сети и нажми «Перевести» ещё раз. Слова, которые ты уже переводил, открываются и без сети</string>
+    <string name="error_model_offline">Русская модель перевода ещё не скачана, а интернета нет</string>
+    <string name="error_model_offline_hint">Подключись к Wi-Fi или мобильной сети и нажми «Перевести»&#160;– модель (около 30&#160;МБ) скачается один раз, потом перевод работает без сети</string>
+    <string name="error_model_failed">Русская модель перевода не скачалась</string>
+    <string name="error_model_failed_hint">Проверь интернет и свободное место на телефоне, затем нажми «Перевести» ещё раз</string>
+    <string name="error_nothing_found">Словарь не нашёл это слово, и машинный перевод тоже ничего не дал</string>
+    <string name="error_nothing_found_hint">Проверь написание или попробуй начальную форму: «went»&#160;→ «go»</string>
+    <string name="pos_noun">существительное</string>
+    <string name="pos_verb">глагол</string>
+    <string name="pos_adjective">прилагательное</string>
+    <string name="pos_adverb">наречие</string>
+    <string name="pos_pronoun">местоимение</string>
+    <string name="pos_preposition">предлог</string>
+    <string name="pos_conjunction">союз</string>
+    <string name="pos_interjection">междометие</string>
+    <string name="pos_other">другое</string>
 
     <!-- Words -->
     <string name="words_title">Слова</string>
