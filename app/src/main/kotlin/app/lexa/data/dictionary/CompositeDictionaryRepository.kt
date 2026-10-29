@@ -27,6 +27,12 @@ import kotlinx.serialization.json.Json
  * (4 s each), merged by [TranslationAssembler]. The merged entry is cached as the `assembled` row,
  * so a repeat works offline. A result built while the dictionary was unreachable is not cached.
  */
+private val CYRILLIC = ('а'..'я') + ('А'..'Я') + 'ё' + 'Ё'
+
+/** «To run.» → «run»: machine output as a dictionary headword. */
+internal fun englishHeadword(text: String): String? =
+    text.trim().trimEnd('.', '!', '?').trim().lowercase().removePrefix("to ").trim().takeIf { it.isNotEmpty() }
+
 class CompositeDictionaryRepository @Inject constructor(
     private val dictionary: DictionarySource,
     private val sentences: ExampleSentenceSource,
@@ -43,6 +49,18 @@ class CompositeDictionaryRepository @Inject constructor(
         cached(key)?.let { return LookupResult.Found(it, fromCache = true) }
 
         val online = network.isOnline()
+        if (query.any { it in CYRILLIC }) {
+            // A Russian word: find its English word first, then look that up as usual – the learner
+            // gets the English entry, and that is what goes into «Новые».
+            if (!translator.isModelReady()) {
+                if (!online) return LookupResult.Failed(LookupError.MODEL_MISSING_OFFLINE)
+                onProgress(LookupProgress.DOWNLOADING_MODEL)
+                translator.downloadModel()
+            }
+            val english = translator.translateToEnglish(query.trim())?.let(::englishHeadword)
+                ?: return LookupResult.Failed(if (online) LookupError.NOTHING_FOUND else LookupError.NO_NETWORK)
+            return lookup(english, onProgress)
+        }
         if (!translator.isModelReady()) {
             if (!online) return LookupResult.Failed(LookupError.MODEL_MISSING_OFFLINE)
             onProgress(LookupProgress.DOWNLOADING_MODEL)

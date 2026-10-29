@@ -51,6 +51,9 @@ interface MachineTranslator {
     /** Downloads the Russian model over any network. Returns false if it failed. */
     suspend fun downloadModel(): Boolean
     suspend fun translate(text: String): String?
+
+    /** RU→EN, for a Russian word typed into the translator. Null when it can't. */
+    suspend fun translateToEnglish(text: String): String? = null
 }
 
 interface NetworkStatus {

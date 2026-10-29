@@ -30,6 +30,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -137,7 +138,10 @@ fun TranslatorScreen(
     val undoLabel = stringResource(R.string.action_undo)
     LaunchedEffect(state.snackbarWordId) {
         val id = state.snackbarWordId ?: return@LaunchedEffect
-        val result = snackbar.showSnackbar(addedMessage, actionLabel = undoLabel, duration = SnackbarDuration.Long)
+        // One second, then it goes (owner's choice): the timeout cancels showSnackbar, which dismisses it.
+        val result = withTimeoutOrNull(ADDED_SNACKBAR_MILLIS) {
+            snackbar.showSnackbar(addedMessage, actionLabel = undoLabel, duration = SnackbarDuration.Indefinite)
+        }
         onSnackbarShown()
         if (result == SnackbarResult.ActionPerformed) onUndoAdd(id)
     }
@@ -420,3 +424,6 @@ internal fun posName(pos: PartOfSpeech): String = stringResource(
         PartOfSpeech.OTHER -> R.string.pos_other
     },
 )
+
+/** How long «Добавлено в новые слова» stays, here and on the translate sheet. */
+internal const val ADDED_SNACKBAR_MILLIS = 1_000L

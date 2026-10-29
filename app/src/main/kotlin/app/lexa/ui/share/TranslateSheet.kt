@@ -1,5 +1,19 @@
 package app.lexa.ui.share
 
+import app.lexa.ui.translator.ADDED_SNACKBAR_MILLIS
+
+import kotlinx.coroutines.delay
+
+import androidx.compose.runtime.LaunchedEffect
+
+import androidx.compose.runtime.setValue
+
+import androidx.compose.runtime.getValue
+
+import androidx.compose.runtime.mutableStateOf
+
+import androidx.compose.runtime.remember
+
 import androidx.compose.ui.text.font.FontWeight
 
 import androidx.compose.foundation.background
@@ -66,7 +80,13 @@ fun TranslateSheetContent(content: SheetContent, actions: SheetActions, modifier
         val result = (content as? SheetContent.Lookup)?.phase as? TranslatorPhase.Result
         if (result?.wordId != null) {
             Column(Modifier.background(colors.sheet).padding(horizontal = Spacing.gutter, vertical = Spacing.m)) {
-                if (result.justAdded) {
+                // «Добавлено в новые слова» stays one second, like the snackbar on the «Перевод» tab.
+                var showAdded by remember(result.wordId) { mutableStateOf(result.justAdded) }
+                LaunchedEffect(result.wordId) {
+                    delay(ADDED_SNACKBAR_MILLIS)
+                    showAdded = false
+                }
+                if (showAdded) {
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,

@@ -23,10 +23,10 @@ class MyMemoryTranslator @Inject constructor(
     private val client: HttpClient,
     private val json: Json,
 ) {
-    suspend fun translate(text: String): String? = try {
+    suspend fun translate(text: String, langpair: String = "en|ru"): String? = try {
         val response = client.get("https://api.mymemory.translated.net/get") {
             parameter("q", text)
-            parameter("langpair", "en|ru")
+            parameter("langpair", langpair)
         }
         if (response.status.value != 200) null else parse(response.bodyAsText())
     } catch (e: CancellationException) {
@@ -69,6 +69,9 @@ class ResilientMachineTranslator @Inject constructor(
 
     override suspend fun translate(text: String): String? =
         (if (onDevice.isModelReady()) onDevice.translate(text) else null) ?: online.translate(text)
+
+    override suspend fun translateToEnglish(text: String): String? =
+        (if (onDevice.isModelReady()) onDevice.translateToEnglish(text) else null) ?: online.translate(text, "ru|en")
 
     private companion object { const val TAG = "Lexa.Translator" }
 }

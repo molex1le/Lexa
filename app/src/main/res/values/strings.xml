@@ -70,7 +70,7 @@
     <string name="translator_hint">Слово или короткая фраза</string>
     <string name="translator_input_label">Слово для перевода</string>
     <string name="translator_action">Перевести</string>
-    <string name="translator_empty">Вставь незнакомое слово&#160;– Lexa покажет перевод, транскрипцию и примеры и сразу добавит его в «Новые слова»</string>
+    <string name="translator_empty">Вставь незнакомое слово&#160;– Lexa покажет перевод, транскрипцию и примеры и сразу добавит его в «Новые слова». Можно и по-русски: найдётся английское слово</string>
     <string name="translator_recent">Недавние</string>
     <string name="translator_loading">Ищу перевод…</string>
     <string name="translator_downloading_model">Скачиваю русскую модель перевода, около 30&#160;МБ. Это нужно один раз&#160;– потом перевод работает без интернета</string>
@@ -228,4 +228,11 @@
         <item quantity="many">%1$d ошибок</item>
         <item quantity="other">%1$d ошибки</item>
     </plurals>
+    <string name="update_title">Доступна Lexa %1$s</string>
+    <string name="update_notes_default">Исправления и улучшения</string>
+    <string name="update_install">Обновить</string>
+    <string name="update_downloading">Скачиваю…</string>
+    <string name="update_later">Позже</string>
+    <string name="update_failed">Обновление не скачалось. Проверь интернет и нажми «Обновить» ещё раз</string>
+    <string name="update_channel">Обновления Lexa</string>
 </resources>

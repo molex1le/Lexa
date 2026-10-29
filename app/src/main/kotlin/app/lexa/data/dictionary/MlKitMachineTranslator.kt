@@ -42,6 +42,14 @@ class MlKitMachineTranslator @Inject constructor() : MachineTranslator {
                 .build(),
         )
     }
+    private val reverse by lazy {
+        Translation.getClient(
+            TranslatorOptions.Builder()
+                .setSourceLanguage(TranslateLanguage.RUSSIAN)
+                .setTargetLanguage(TranslateLanguage.ENGLISH)
+                .build(),
+        )
+    }
     private val model = TranslateRemoteModel.Builder(TranslateLanguage.RUSSIAN).build()
     private val mutex = Mutex()
 
@@ -56,6 +64,11 @@ class MlKitMachineTranslator @Inject constructor() : MachineTranslator {
 
     override suspend fun translate(text: String): String? = guarded(null) {
         mutex.withLock { client.translate(text).await() }
+    }
+
+    /** Same Russian model, the other way round (the English one is built in). */
+    override suspend fun translateToEnglish(text: String): String? = guarded(null) {
+        mutex.withLock { reverse.translate(text).await() }
     }
 
     private inline fun <T> guarded(fallback: T, block: () -> T): T = try {

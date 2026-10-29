@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import app.lexa.ui.navigation.LaunchTarget
 import app.lexa.ui.navigation.LexaNavHost
 import app.lexa.ui.theme.LexaTheme
+import app.lexa.update.UpdatePrompt
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -30,6 +31,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             LexaTheme {
                 LexaNavHost(launchTarget = launchTarget.value, onLaunchHandled = { launchTarget.value = null })
+                UpdatePrompt()
             }
         }
     }

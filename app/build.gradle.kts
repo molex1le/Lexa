@@ -18,12 +18,25 @@ android {
         applicationId = "app.lexa"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Modern phones only: ML Kit ships a ~16 MB native library per ABI, and the other three
         // (armeabi-v7a, x86, x86_64) would add ~45 MB for devices the owner doesn't use.
         ndk { abiFilters += "arm64-v8a" }
+    }
+
+    // CI (GitHub release workflow) passes the key in LEXA_KEYSTORE; locally the release build uses the
+    // debug key from .tools/android-user-home. Both are the same key, so a GitHub build installs over a
+    // local one and the in-app updater works.
+    val keystore = System.getenv("LEXA_KEYSTORE")
+    signingConfigs {
+        if (keystore != null) create("ci") {
+            storeFile = file(keystore)
+            storePassword = System.getenv("LEXA_STORE_PASSWORD") ?: "android"
+            keyAlias = System.getenv("LEXA_KEY_ALIAS") ?: "androiddebugkey"
+            keyPassword = System.getenv("LEXA_KEY_PASSWORD") ?: "android"
+        }
     }
 
     buildTypes {
@@ -31,8 +44,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Personal build: signed with the local debug key so it installs without a release keystore.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("ci") ?: signingConfigs.getByName("debug")
         }
     }
 

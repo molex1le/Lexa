@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Review reminder (docs/ARCHITECTURE.md §13); asked for when the reminder is turned on -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Self-update from GitHub releases: the system installer still asks the learner to confirm -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- TextToSpeech fallback for pronunciation (Android 11+ package visibility) -->
     <queries>
@@ -63,6 +65,15 @@
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup"
                 tools:node="remove" />
+        </provider>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_paths" />
         </provider>
     </application>
 

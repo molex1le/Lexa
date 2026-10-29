@@ -1,5 +1,7 @@
 package app.lexa
 
+import app.lexa.update.UpdateCheckWorker
+
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
@@ -22,6 +24,7 @@ class LexaApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         ReminderNotifier.createChannel(this)
+        UpdateCheckWorker.schedule(this)
         // A word swiped away just before the process died is deleted for good now (docs/ARCHITECTURE.md §6.1).
         scope.launch { words.purgeDeletedBefore(time.nowMillis() - 60_000) }
     }
