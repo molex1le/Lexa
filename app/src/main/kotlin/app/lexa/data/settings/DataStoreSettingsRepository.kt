@@ -14,7 +14,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/** Settings in DataStore Preferences (docs/ARCHITECTURE.md §11). Phase 1 keys only. */
+/** Settings in DataStore Preferences (docs/ARCHITECTURE.md §11). Keys added as phases need them. */
 class DataStoreSettingsRepository @Inject constructor(
     private val store: DataStore<Preferences>,
 ) : SettingsRepository {
@@ -38,6 +38,10 @@ class DataStoreSettingsRepository @Inject constructor(
 
     override suspend fun setReminderMinutes(minutes: Int) {
         store.edit { it[Keys.reminderTime] = minutes.coerceIn(0, 24 * 60 - 1) }
+    }
+
+    override suspend fun setReminderEnabled(enabled: Boolean) {
+        store.edit { it[Keys.reminderEnabled] = enabled }
     }
 
     override suspend fun setWordSort(sort: WordSort) {
