@@ -149,6 +149,12 @@ fun WordScreen(state: WordUiState, actions: WordActions = WordActions(), modifie
                         MarkerButton(stringResource(R.string.action_return_to_learning), actions.onReturnToLearning)
                     } else {
                         BoxIndicator(word.box)
+                        Spacer(Modifier.height(Spacing.s))
+                        Text(
+                            stringResource(R.string.word_boxes_description, word.box),
+                            style = type.meta,
+                            color = colors.ink,
+                        )
                     }
                     Spacer(Modifier.height(Spacing.m))
                     Text(

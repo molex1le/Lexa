@@ -256,7 +256,9 @@ class ScreenshotTest(private val dark: Boolean) {
         }
     }
 
-    @Test fun wordCard() = snap("word_card") {
+    @Test fun wordCard() = wordCard("word_card")
+
+    private fun wordCard(name: String) = snap(name) {
         WordScreen(
             WordUiState(
                 isLoading = false,
@@ -272,6 +274,13 @@ class ScreenshotTest(private val dark: Boolean) {
     @Test fun statsData() = snap("stats_data") {
         WithBar(TopLevel.STATS) { StatsScreen(SampleStats, modifier = it) }
     }
+
+    /** The whole statistics column on one tall image, so blocks below the fold get reviewed too. */
+    @Test @Config(qualifiers = "w360dp-h2400dp-xxhdpi")
+    fun statsDataFull() = snap("stats_data_full") { StatsScreen(SampleStats) }
+
+    @Test @Config(qualifiers = "w360dp-h1600dp-xxhdpi")
+    fun wordCardFull() = wordCard("word_card_full")
 
     @Test fun typeSpecimen() = snap("type_specimen") {
         TypeSpecimen()

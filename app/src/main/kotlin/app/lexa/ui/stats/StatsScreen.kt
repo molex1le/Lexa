@@ -267,6 +267,8 @@ private fun AccuracyFigure(totals: AnswerTotals, period: String, modifier: Modif
  * 30 bars, oldest on the left. Empty days are a 2dp stub on the baseline, so the frame of the chart
  * is drawn even with no data. Today's bar is the one place the marker appears on this screen.
  */
+private const val ChartFloor = 4
+
 @Composable
 private fun DailyBars(values: List<Int>) {
     val colors = LexaTheme.colors
@@ -281,7 +283,9 @@ private fun DailyBars(values: List<Int>) {
         val gap = 2.dp.toPx()
         val stub = 2.dp.toPx()
         val barWidth = (size.width - gap * (values.size - 1)) / values.size
-        val max = values.maxOrNull()?.takeIf { it > 0 } ?: 0
+        // A floor of 4 keeps a single learned word from filling the chart; the three gridlines then mark
+        // whole counts (1, 2, 3 at the floor) instead of arbitrary fractions.
+        val max = values.maxOrNull()?.takeIf { it > 0 }?.coerceAtLeast(ChartFloor) ?: 0
         val grid = colors.pencil.copy(alpha = 0.16f)
         if (max > 0) {
             for (i in 1..3) {
