@@ -4,6 +4,10 @@ import android.content.Context
 import androidx.room.withTransaction
 import app.lexa.data.db.LexaDatabase
 import app.lexa.data.db.entity.DeckSeenEntity
+import app.lexa.data.db.entity.ExampleJson
+import app.lexa.data.db.entity.ExampleSource
+import app.lexa.domain.repository.DictionarySource
+import app.lexa.domain.repository.SourceResult
 import app.lexa.data.db.entity.ReviewDirection
 import app.lexa.data.db.entity.ReviewLogEntity
 import app.lexa.data.db.entity.ReviewOutcome
@@ -41,13 +45,20 @@ class AssetDeckRepository internal constructor(
     private val db: LexaDatabase,
     private val time: TimeProvider,
     private val random: Random,
+    private val dictionary: DictionarySource? = null,
 ) : DeckRepository {
 
-    @Inject constructor(@ApplicationContext context: Context, db: LexaDatabase, time: TimeProvider) : this(
+    @Inject constructor(
+        @ApplicationContext context: Context,
+        db: LexaDatabase,
+        time: TimeProvider,
+        dictionary: DictionarySource,
+    ) : this(
         load = { withContext(Dispatchers.IO) { context.assets.open(ASSET).bufferedReader().use { it.readText() } } },
         db = db,
         time = time,
         random = Random.Default,
+        dictionary = dictionary,
     )
 
     private val mutex = Mutex()
@@ -113,6 +124,26 @@ class AssetDeckRepository internal constructor(
         // The review_log row goes with the word (ON DELETE CASCADE).
         db.wordDao().deleteById(wordId)
         db.deckDao().upsert(DeckSeenEntity(term, known = true, seenAt = time.nowMillis()))
+    }
+
+    override suspend fun enrich(wordId: Long, term: String) {
+        val data = (dictionary?.fetch(normalizeKey(term.removePrefix("to "))) as? SourceResult.Ok)?.data ?: return
+        val meanings = data.meanings
+        db.wordDao().enrich(
+            id = wordId,
+            ipa = data.ipa,
+            audioUrl = data.audioUrl,
+            definition = meanings.firstNotNullOfOrNull { it.definitions.firstOrNull() },
+            examples = meanings.flatMap { it.examples }.distinct().take(3).map { ExampleJson(en = it, source = ExampleSource.DICTIONARY) },
+            synonyms = meanings.flatMap { it.synonyms }.distinct().take(8),
+        )
+    }
+
+    override suspend fun addedSince(millis: Long): Int = db.wordDao().countDeckAddedSince(millis)
+
+    override suspend fun translationsOf(term: String): String? {
+        val key = normalizeKey(term)
+        return words().firstOrNull { normalizeKey(it.term) == key || normalizeKey(it.term.removePrefix("to ")) == key }?.translations
     }
 
     companion object {

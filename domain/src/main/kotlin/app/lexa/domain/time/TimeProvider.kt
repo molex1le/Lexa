@@ -10,4 +10,5 @@ interface TimeProvider {
     val zone: ZoneId get() = clock.zone
     fun nowMillis(): Long = clock.millis()
     fun today(): LocalDate = LocalDate.now(clock)
+    fun startOfToday(): Long = today().atStartOfDay(zone).toInstant().toEpochMilli()
 }

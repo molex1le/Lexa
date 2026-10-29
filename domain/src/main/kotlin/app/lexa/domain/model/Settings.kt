@@ -8,8 +8,12 @@ data class Settings(
     val wordSort: WordSort = WordSort.ADDED,
     /** Null until the learner picks a level or takes the placement test. */
     val vocabLevel: VocabLevel? = null,
+    /** Cards per training session (5–100). */
+    val sessionSize: Int = DEFAULT_SESSION_SIZE,
 ) {
     companion object {
         const val DEFAULT_REMINDER_MINUTES = 19 * 60
+        const val DEFAULT_SESSION_SIZE = 20
+        val SESSION_SIZES = 5..100
     }
 }

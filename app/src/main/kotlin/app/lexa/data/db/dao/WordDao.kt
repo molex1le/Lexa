@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import app.lexa.data.db.entity.ExampleJson
 import app.lexa.data.db.entity.WordEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -27,6 +28,23 @@ interface WordDao {
 
     @Query("DELETE FROM words WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    /** Dictionary details for a built-in word that joined «Новые» with its translation only. */
+    @Query(
+        "UPDATE words SET ipa = :ipa, audioUrl = :audioUrl, definition = :definition, examples = :examples, " +
+            "synonyms = :synonyms WHERE id = :id",
+    )
+    suspend fun enrich(
+        id: Long,
+        ipa: String?,
+        audioUrl: String?,
+        definition: String?,
+        examples: List<ExampleJson>,
+        synonyms: List<String>,
+    )
+
+    @Query("SELECT COUNT(*) FROM words WHERE source = 'DECK' AND addedAt >= :since")
+    suspend fun countDeckAddedSince(since: Long): Int
 
     /** Every term key, soft-deleted included: the deck never offers a word already in the list. */
     @Query("SELECT termKey FROM words")

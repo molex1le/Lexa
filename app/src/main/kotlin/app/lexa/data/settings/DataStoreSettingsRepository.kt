@@ -31,6 +31,7 @@ class DataStoreSettingsRepository @Inject constructor(
                 ?.let { name -> WordSort.entries.firstOrNull { it.name == name } }
                 ?: WordSort.ADDED,
             vocabLevel = prefs[Keys.vocabLevel]?.let { name -> VocabLevel.entries.firstOrNull { it.name == name } },
+            sessionSize = prefs[Keys.sessionSize]?.coerceIn(Settings.SESSION_SIZES) ?: Settings.DEFAULT_SESSION_SIZE,
         )
     }
 
@@ -50,6 +51,10 @@ class DataStoreSettingsRepository @Inject constructor(
         store.edit { it[Keys.wordSort] = sort.name }
     }
 
+    override suspend fun setSessionSize(size: Int) {
+        store.edit { it[Keys.sessionSize] = size.coerceIn(Settings.SESSION_SIZES) }
+    }
+
     override suspend fun setVocabLevel(level: VocabLevel) {
         store.edit { it[Keys.vocabLevel] = level.name }
     }
@@ -60,5 +65,6 @@ class DataStoreSettingsRepository @Inject constructor(
         val reminderEnabled = booleanPreferencesKey("reminderEnabled")
         val wordSort = stringPreferencesKey("wordSort")
         val vocabLevel = stringPreferencesKey("vocabLevel")
+        val sessionSize = intPreferencesKey("sessionSize")
     }
 }

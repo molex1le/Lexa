@@ -10,7 +10,9 @@ import app.lexa.domain.repository.WordRepository
 import app.lexa.domain.time.TimeProvider
 import app.lexa.domain.training.AnswerResult
 import app.lexa.domain.training.CardDirection
+import app.lexa.domain.training.AnswerMode
 import app.lexa.domain.training.CheckResult
+import app.lexa.ui.translator.Pronouncer
 import app.lexa.domain.training.DeckRepository
 import app.lexa.domain.training.DeckWord
 import app.lexa.domain.training.PlacementTest
@@ -46,6 +48,7 @@ class HomeViewModel @Inject constructor(
     private val training: TrainingSession,
     private val deck: DeckRepository,
     private val time: TimeProvider,
+    private val pronouncer: Pronouncer,
 ) : ViewModel() {
 
     /**
@@ -138,8 +141,8 @@ class HomeViewModel @Inject constructor(
                 celebrated = false
                 bestStreakAtStart = stats.observeStreak(time.today()).first().best
                 val direction = settings.settings.first().direction
-                val level = settings.settings.first().vocabLevel
-                cards = training.build(practice, level)
+                val prefs = settings.settings.first()
+                cards = training.build(practice, prefs.vocabLevel, prefs.sessionSize)
                 directions = cards.map {
                     when (direction) {
                         Direction.EN_RU -> CardDirection.EN_RU
@@ -167,21 +170,45 @@ class HomeViewModel @Inject constructor(
         session.value = phase.copy(answer = text)
     }
 
+    /** «Подсказка»: the first letter; a right answer after it does not move the word up. */
+    fun showHint() {
+        val phase = session.value as? TrainingPhase.Question ?: return
+        if (busy || phase.hint != null) return
+        session.value = phase.copy(hint = TrainingSession.hint(cards[index], directions[index]))
+    }
+
+    /** «Не знаю»: the answer is shown, the word goes to «Новые». */
+    fun dontKnow() = answer(AnswerMode.GAVE_UP)
+
     fun check() {
         val phase = session.value as? TrainingPhase.Question ?: return
-        if (phase.answer.isBlank() || busy) return
+        if (phase.answer.isBlank()) return
+        answer(if (phase.hint != null) AnswerMode.HINTED else AnswerMode.TYPED)
+    }
+
+    private fun answer(mode: AnswerMode) {
+        val phase = session.value as? TrainingPhase.Question ?: return
+        if (busy) return
         busy = true
         viewModelScope.launch {
             try {
                 val card = cards[index]
                 val direction = directions[index]
-                val result = training.answer(card, direction, phase.answer, wasDue = !practice)
+                val typed = if (mode == AnswerMode.GAVE_UP) "" else phase.answer
+                val result = training.answer(card, direction, typed, wasDue = !practice, mode = mode)
                 lastResult = result
                 if (result.check.isCorrect) correct++
-                val verdict = when (result.check) {
-                    is CheckResult.Exact -> Verdict.CORRECT
-                    is CheckResult.AcceptedWithTypo -> Verdict.TYPO
-                    is CheckResult.Wrong -> Verdict.WRONG
+                val newWordId = result.newWordId
+                // A built-in word that joined «Новые» gets its dictionary card in the background.
+                if (newWordId != null && card.deck != null) viewModelScope.launch { deck.enrich(newWordId, card.term) }
+                val verdict = when {
+                    result.alsoRight != null -> Verdict.ALSO_RIGHT
+                    mode == AnswerMode.GAVE_UP -> Verdict.GAVE_UP
+                    else -> when (result.check) {
+                        is CheckResult.Exact -> Verdict.CORRECT
+                        is CheckResult.AcceptedWithTypo -> Verdict.TYPO
+                        is CheckResult.Wrong -> Verdict.WRONG
+                    }
                 }
                 val celebration = celebrationFor(result)
                 // A result only lands on the card it was computed for.
@@ -201,6 +228,9 @@ class HomeViewModel @Inject constructor(
                     example = card.example,
                     celebration = celebration,
                     fromDeck = card.deck != null,
+                    hinted = mode == AnswerMode.HINTED,
+                    nextReviewDays = nextReviewDays(result),
+                    alsoRight = result.alsoRight,
                 )
             } finally {
                 busy = false
@@ -212,7 +242,7 @@ class HomeViewModel @Inject constructor(
     fun overrideAsTypo() {
         val phase = session.value as? TrainingPhase.Feedback ?: return
         val result = lastResult ?: return
-        if (phase.verdict != Verdict.WRONG || busy) return
+        if (phase.verdict != Verdict.WRONG || phase.removed || busy) return
         busy = true
         viewModelScope.launch {
             try {
@@ -229,6 +259,45 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
+    /** Days until the word comes back, for «повторим через N дней»; null when it is not in a box now. */
+    private fun nextReviewDays(result: AnswerResult): Int? {
+        val state = result.transition.state
+        if (result.transition.learned || state.box !in 1..5 || state.learnedAt != null) return null
+        val days = java.time.temporal.ChronoUnit.DAYS.between(
+            time.today(),
+            java.time.Instant.ofEpochMilli(state.nextReviewAt).atZone(time.zone).toLocalDate(),
+        )
+        return days.toInt().coerceAtLeast(0)
+    }
+
+    fun pronounce() {
+        val card = cards.getOrNull(index) ?: return
+        pronouncer.play(card.term, card.audioUrl)
+    }
+
+    /** «Убрать из изучения» or «Я это знаю» on the feedback: the word leaves training, the session goes on. */
+    fun removeWord() = leave { card, result -> training.remove(card, result) }
+
+    fun markKnown() = leave { card, result -> training.markKnown(card, result) }
+
+    private fun leave(action: suspend (TrainingCard, AnswerResult?) -> Unit) {
+        val phase = session.value as? TrainingPhase.Feedback ?: return
+        if (busy) return
+        busy = true
+        viewModelScope.launch {
+            try {
+                action(cards[index], lastResult)
+                // A wrong answer that is undone this way no longer counts against the session.
+                if (phase.verdict == Verdict.WRONG || phase.verdict == Verdict.GAVE_UP) correct++
+                if (session.value === phase) session.value = phase.copy(removed = true)
+            } finally {
+                busy = false
+            }
+        }
+    }
+
+    override fun onCleared() = pronouncer.release()
 
     private suspend fun celebrationFor(result: AnswerResult): Celebration? {
         if (celebrated || !result.check.isCorrect) return null

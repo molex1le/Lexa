@@ -27,6 +27,18 @@ interface DeckRepository {
 
     /** «Я знал, это опечатка» on a deck word: removes the word [addAsNew] created and marks it known. */
     suspend fun undoAddAsNew(wordId: Long, term: String)
+
+    /** How many deck words joined «Новые» since [millis] (start of today): the daily limit. */
+    suspend fun addedSince(millis: Long): Int
+
+    /**
+     * Fills a built-in word that joined «Новые» with dictionary details (IPA, audio, definition,
+     * examples, synonyms). Best effort: offline or not found leaves it as it is.
+     */
+    suspend fun enrich(wordId: Long, term: String)
+
+    /** The built-in translations of an English word, if it is in the set. */
+    suspend fun translationsOf(term: String): String?
 }
 
 /**

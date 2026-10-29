@@ -1,5 +1,11 @@
 package app.lexa.ui.home
 
+import app.lexa.ui.components.LexaIconButton
+
+import androidx.compose.foundation.layout.width
+
+import androidx.compose.foundation.layout.Row
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -73,7 +79,8 @@ data class TrainingCardUi(
     val expectsEnglish: Boolean,
 )
 
-enum class Verdict { CORRECT, TYPO, WRONG, OVERRIDDEN }
+/** GAVE_UP: «Не знаю». ALSO_RIGHT: another right English word in RU→EN – no credit, no penalty. */
+enum class Verdict { CORRECT, TYPO, WRONG, OVERRIDDEN, GAVE_UP, ALSO_RIGHT }
 
 /** The one short celebration a session may have (CLAUDE.md §3 «Движение»). */
 sealed interface Celebration {
@@ -88,6 +95,8 @@ sealed interface TrainingPhase {
         val position: Int,
         val total: Int,
         val answer: String = "",
+        /** «j _ _ _ _ _ _» once «Подсказка» was tapped. */
+        val hint: String? = null,
     ) : TrainingPhase {
         val canCheck: Boolean get() = answer.isNotBlank()
     }
@@ -107,6 +116,13 @@ sealed interface TrainingPhase {
         val celebration: Celebration? = null,
         /** A built-in word: wrong adds it to «Новые», right means it is known and never shown again. */
         val fromDeck: Boolean = false,
+        val hinted: Boolean = false,
+        /** Days until the word comes back; null when it is in no box (learned, known, removed). */
+        val nextReviewDays: Int? = null,
+        /** ALSO_RIGHT: the English word being learned. */
+        val alsoRight: String? = null,
+        /** «Убрать из изучения» / «Я это знаю» was used on this card. */
+        val removed: Boolean = false,
     ) : TrainingPhase
 
     data class Done(val correct: Int, val total: Int) : TrainingPhase
@@ -121,6 +137,11 @@ class TrainingActions(
     val onFinish: () -> Unit = {},
     /** A wrong answer sent the word back to «Новые»: the «Слова» tab pulses once. */
     val onWordReturned: () -> Unit = {},
+    val onHint: () -> Unit = {},
+    val onDontKnow: () -> Unit = {},
+    val onPronounce: () -> Unit = {},
+    val onRemove: () -> Unit = {},
+    val onMarkKnown: () -> Unit = {},
 )
 
 @Composable
@@ -165,6 +186,7 @@ private fun CardFace(
     card: TrainingCardUi,
     rotationY: Float = 0f,
     term: @Composable (@Composable () -> Unit) -> Unit = { it() },
+    onSpeak: (() -> Unit)? = null,
     box: @Composable () -> Unit,
 ) {
     val colors = LexaTheme.colors
@@ -178,9 +200,15 @@ private fun CardFace(
             },
     ) {
         term { FitWordText(card.prompt, style = type.word, color = colors.ink, modifier = Modifier.fillMaxWidth()) }
-        if (card.ipa != null) {
+        if (card.ipa != null || onSpeak != null) {
             Spacer(Modifier.height(Spacing.s))
-            Text(card.ipa, style = type.meta, color = colors.pencil)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                card.ipa?.let { Text(it, style = type.meta, color = colors.pencil) }
+                if (onSpeak != null) {
+                    if (card.ipa != null) Spacer(Modifier.width(Spacing.s))
+                    LexaIconButton(R.drawable.ic_sound, stringResource(R.string.action_pronounce), onSpeak)
+                }
+            }
         }
         Spacer(Modifier.height(Spacing.m))
         box()
@@ -195,7 +223,8 @@ private fun QuestionCard(phase: TrainingPhase.Question, actions: TrainingActions
     val focus = remember { FocusRequester() }
     val label = stringResource(R.string.training_answer_label)
     Progress(phase.position, phase.total)
-    CardFace(phase.card) { CardBoxes(phase.card.box) }
+    // The English word may be heard while answering; in RU→EN the sound would give the answer away.
+    CardFace(phase.card, onSpeak = actions.onPronounce.takeUnless { phase.card.expectsEnglish }) { CardBoxes(phase.card.box) }
     BasicTextField(
         value = phase.answer,
         onValueChange = actions.onAnswerChange,
@@ -232,8 +261,17 @@ private fun QuestionCard(phase: TrainingPhase.Question, actions: TrainingActions
             }
         },
     )
+    phase.hint?.let {
+        Spacer(Modifier.height(Spacing.s))
+        Text(stringResource(R.string.training_hint_shown, it), style = type.body, color = colors.pencil)
+    }
     Spacer(Modifier.height(Spacing.l))
     MarkerButton(stringResource(R.string.training_check), onClick = actions.onCheck, enabled = phase.canCheck)
+    Spacer(Modifier.height(Spacing.s))
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.l)) {
+        if (phase.hint == null) TextAction(stringResource(R.string.training_hint), actions.onHint)
+        TextAction(stringResource(R.string.training_dont_know), actions.onDontKnow)
+    }
     LaunchedEffect(phase.position) { runCatching { focus.requestFocus() } }
 }
 
@@ -243,7 +281,8 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
     val type = LexaTheme.type
     val haptics = LocalHapticFeedback.current
     val reduced = rememberReducedMotion()
-    val correct = phase.verdict != Verdict.WRONG
+    val wrong = phase.verdict == Verdict.WRONG || phase.verdict == Verdict.GAVE_UP
+    val correct = !wrong
     // The card turns over (0→180°), then the marker slides from the old box into the new one with a small
     // overshoot; a wrong answer shows box 1 without a slide, and a copy of the word flies off to «Слова».
     // What already played for this card survives rotation, so turning the phone does not replay the
@@ -255,7 +294,7 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
     val markerAt = remember(phase.position) {
         Animatable(if (correct && !still) phase.card.box.toFloat() else phase.boxAfter.toFloat())
     }
-    val flight = remember(phase.position) { Animatable(if (returned && phase.verdict == Verdict.WRONG) 1f else 0f) }
+    val flight = remember(phase.position) { Animatable(if (returned && wrong) 1f else 0f) }
     val celebrate = remember(phase.position) { Animatable(if (still) 1f else 0f) }
     LaunchedEffect(phase.position, phase.verdict) {
         if (played == phase.verdict) return@LaunchedEffect
@@ -265,7 +304,7 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
         val box = phase.boxAfter.toFloat()
         if (reduced) markerAt.snapTo(box)
         else markerAt.animateTo(box, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow))
-        if (phase.verdict == Verdict.WRONG && !returned) {
+        if (wrong && !returned) {
             returned = true
             if (!reduced) flight.animateTo(1f, spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow))
             actions.onWordReturned()
@@ -289,21 +328,27 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
             phase.card,
             rotationY = angle - 180f,
             term = { word -> FlyingWord(phase.card.prompt, flight.value, word) },
+            onSpeak = actions.onPronounce,
         ) {
             if (phase.boxAfter > 0) BoxIndicator(phase.boxAfter, markerAt = markerAt.value) else CardBoxes(0)
         }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        if (phase.verdict == Verdict.WRONG) {
-            val wrongDescription = stringResource(R.string.training_your_answer_wrong, phase.answer)
-            Text(
-                phase.answer,
-                style = type.title.copy(textDecoration = TextDecoration.LineThrough),
-                color = colors.redpen,
-                modifier = Modifier.semantics { contentDescription = wrongDescription },
-            )
+        if (wrong) {
+            if (phase.answer.isNotBlank()) {
+                val wrongDescription = stringResource(R.string.training_your_answer_wrong, phase.answer)
+                Text(
+                    phase.answer,
+                    style = type.title.copy(textDecoration = TextDecoration.LineThrough),
+                    color = colors.redpen,
+                    modifier = Modifier.semantics { contentDescription = wrongDescription },
+                )
+            }
             Text(phase.correctAnswer, style = type.title, color = colors.ink)
+        } else if (phase.verdict == Verdict.ALSO_RIGHT) {
+            Text(phase.answer, style = type.title, color = colors.ink)
+            Text(stringResource(R.string.training_also_right, phase.alsoRight.orEmpty()), style = type.body, color = colors.ink)
         } else {
             Text(phase.answer, style = type.title, color = colors.ink)
             if (phase.verdict == Verdict.TYPO) {
@@ -318,7 +363,10 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
             }
         }
         when (val celebration = phase.celebration) {
-            null -> Text(statusLine(phase), style = type.meta, color = colors.pencil)
+            null -> {
+                Text(statusLine(phase), style = type.meta, color = colors.pencil)
+                nextReviewLine(phase)?.let { Text(it, style = type.meta, color = colors.pencil) }
+            }
             Celebration.Learned -> CelebrationLine(statusLine(phase), celebrate.value)
             is Celebration.StreakRecord -> {
                 Text(statusLine(phase), style = type.meta, color = colors.pencil)
@@ -333,27 +381,49 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
         }
     }
 
-    if (phase.verdict == Verdict.WRONG) {
+    if (wrong) {
         phase.example?.let {
             Spacer(Modifier.height(Spacing.l))
             ExampleLines(it)
         }
-        Spacer(Modifier.height(Spacing.m))
-        Box(
-            Modifier
-                .heightIn(min = Spacing.touch)
-                .clickable(role = Role.Button, onClick = actions.onOverride),
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            Text(
-                stringResource(R.string.training_override),
-                style = type.body.copy(textDecoration = TextDecoration.Underline),
-                color = colors.ink,
-            )
+    }
+    Spacer(Modifier.height(Spacing.m))
+    if (phase.removed) {
+        Text(stringResource(R.string.training_removed), style = type.body, color = colors.pencil)
+    } else {
+        if (phase.verdict == Verdict.WRONG) TextAction(stringResource(R.string.training_override), actions.onOverride)
+        // A built-in word answered right is already gone from training: nothing to remove.
+        if (!(phase.fromDeck && correct)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.l)) {
+                TextAction(stringResource(R.string.training_mark_known), actions.onMarkKnown)
+                TextAction(stringResource(R.string.training_remove), actions.onRemove)
+            }
         }
     }
-    Spacer(Modifier.height(if (phase.verdict == Verdict.WRONG) Spacing.m else Spacing.l))
+    Spacer(Modifier.height(Spacing.m))
     MarkerButton(stringResource(R.string.training_next), onClick = actions.onNext)
+}
+
+/** A secondary action: underlined ink text with a 48dp target; the marker stays on the main button. */
+@Composable
+private fun TextAction(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .heightIn(min = Spacing.touch)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(label, style = LexaTheme.type.body.copy(textDecoration = TextDecoration.Underline), color = LexaTheme.colors.ink)
+    }
+}
+
+/** «Повторим через 3 дня» under a word that stays in the boxes. */
+@Composable
+private fun nextReviewLine(phase: TrainingPhase.Feedback): String? {
+    val days = phase.nextReviewDays ?: return null
+    if (phase.removed || phase.verdict == Verdict.ALSO_RIGHT) return null
+    return if (days == 0) stringResource(R.string.training_next_review_today)
+    else stringResource(R.string.training_next_review, pluralStringResource(R.plurals.days, days, days))
 }
 
 /**
@@ -412,20 +482,59 @@ private fun CelebrationLine(text: String, progress: Float) {
 /** A built-in word (box 0) is in no box yet: it says so instead of showing five empty slots. */
 @Composable
 private fun CardBoxes(box: Int) {
-    if (box > 0) BoxIndicator(box)
-    else Text(stringResource(R.string.training_deck_word), style = LexaTheme.type.meta, color = LexaTheme.colors.pencil)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (box > 0) BoxIndicator(box)
+        else Text(stringResource(R.string.training_deck_word), style = LexaTheme.type.meta, color = LexaTheme.colors.pencil)
+        Spacer(Modifier.width(Spacing.m))
+        BoxesExplainer()
+    }
+}
+
+/** «Что за коробки?» – the Leitner rules in plain words, in a dialog. */
+@Composable
+private fun BoxesExplainer() {
+    var open by rememberSaveable { mutableStateOf(false) }
+    val colors = LexaTheme.colors
+    Box(
+        Modifier.heightIn(min = Spacing.touch).clickable(role = Role.Button) { open = true },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            stringResource(R.string.boxes_what),
+            style = LexaTheme.type.meta.copy(textDecoration = TextDecoration.Underline),
+            color = colors.pencil,
+        )
+    }
+    if (open) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { open = false },
+            containerColor = colors.paper,
+            title = { Text(stringResource(R.string.boxes_title), style = LexaTheme.type.title, color = colors.ink) },
+            text = { Text(stringResource(R.string.boxes_explained), style = LexaTheme.type.body, color = colors.ink) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { open = false }) {
+                    Text(stringResource(R.string.boxes_ok), style = LexaTheme.type.body, color = colors.ink)
+                }
+            },
+        )
+    }
 }
 
 @Composable
 private fun statusLine(phase: TrainingPhase.Feedback): String = when {
-    phase.fromDeck && phase.verdict == Verdict.WRONG -> stringResource(R.string.training_deck_added)
+    phase.removed -> ""
+    phase.verdict == Verdict.ALSO_RIGHT -> stringResource(R.string.training_also_right_status)
+    phase.fromDeck && phase.hinted && phase.verdict != Verdict.WRONG -> stringResource(R.string.training_deck_added_hint)
+    phase.hinted && phase.verdict != Verdict.WRONG -> stringResource(R.string.training_hinted_status)
+    phase.fromDeck && (phase.verdict == Verdict.WRONG || phase.verdict == Verdict.GAVE_UP) -> stringResource(R.string.training_deck_added)
     phase.fromDeck -> stringResource(R.string.training_deck_known)
     else -> userWordStatus(phase)
 }
 
 @Composable
 private fun userWordStatus(phase: TrainingPhase.Feedback): String = when (phase.verdict) {
-    Verdict.WRONG -> stringResource(R.string.training_back_to_new)
+    Verdict.WRONG, Verdict.GAVE_UP -> stringResource(R.string.training_back_to_new)
+    Verdict.ALSO_RIGHT -> stringResource(R.string.training_also_right_status)
     Verdict.OVERRIDDEN ->
         if (phase.learned) stringResource(R.string.training_overridden_learned)
         else stringResource(R.string.training_overridden_box, phase.boxAfter)

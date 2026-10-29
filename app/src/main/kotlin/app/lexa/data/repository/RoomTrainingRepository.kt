@@ -7,7 +7,9 @@ import app.lexa.data.db.entity.ReviewDirection
 import app.lexa.data.db.entity.ReviewLogEntity
 import app.lexa.data.db.entity.ReviewOutcome
 import app.lexa.data.db.entity.WordEntity
+import app.lexa.domain.leitner.LeitnerRules
 import app.lexa.domain.leitner.ReviewState
+import app.lexa.domain.text.normalizeKey
 import app.lexa.domain.model.Example
 import app.lexa.domain.model.ExampleOrigin
 import app.lexa.domain.training.ReviewRecord
@@ -33,6 +35,8 @@ internal fun WordEntity.toCard() = TrainingCard(
         )
     },
     state = ReviewState(box = box, nextReviewAt = nextReviewAt, mistakesCount = mistakesCount, learnedAt = learnedAt),
+    synonyms = synonyms,
+    audioUrl = audioUrl,
 )
 
 class RoomTrainingRepository @Inject constructor(private val db: LexaDatabase) : TrainingRepository {
@@ -69,4 +73,14 @@ class RoomTrainingRepository @Inject constructor(private val db: LexaDatabase) :
             words.updateSchedule(wordId, state.box, state.nextReviewAt, state.mistakesCount, state.learnedAt, reviewedAt)
             log.markOverridden(logId, toBox)
         }
+
+    override suspend fun translationsOf(term: String): List<String> =
+        words.findByKey(normalizeKey(term))?.takeIf { it.deletedAt == null }?.translations?.map { it.text }.orEmpty()
+
+    override suspend fun remove(wordId: Long) = words.deleteById(wordId)
+
+    override suspend fun markLearned(wordId: Long, nowMillis: Long) {
+        val word = words.find(wordId) ?: return
+        words.updateSchedule(wordId, LeitnerRules.LAST_BOX, word.nextReviewAt, word.mistakesCount, nowMillis, nowMillis)
+    }
 }

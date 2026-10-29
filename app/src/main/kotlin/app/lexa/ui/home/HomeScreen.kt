@@ -72,6 +72,11 @@ fun HomeRoute(
             onNext = viewModel::next,
             onFinish = viewModel::finish,
             onWordReturned = onWordReturned,
+            onHint = viewModel::showHint,
+            onDontKnow = viewModel::dontKnow,
+            onPronounce = viewModel::pronounce,
+            onRemove = viewModel::removeWord,
+            onMarkKnown = viewModel::markKnown,
         ),
     )
 }

@@ -57,6 +57,7 @@ private class FakeWords(var due: Int) : WordRepository {
     override suspend fun purge(id: Long) = TODO()
     override suspend fun purgeDeletedBefore(beforeMillis: Long) = TODO()
     override suspend fun returnToLearning(id: Long) = TODO()
+    override suspend fun markLearned(id: Long) = TODO()
 }
 
 private class FakeSettings(initial: Settings) : SettingsRepository {
@@ -67,6 +68,7 @@ private class FakeSettings(initial: Settings) : SettingsRepository {
     override suspend fun setReminderEnabled(enabled: Boolean) { flow.value = flow.value.copy(reminderEnabled = enabled) }
     override suspend fun setWordSort(sort: WordSort) { flow.value = flow.value.copy(wordSort = sort) }
     override suspend fun setVocabLevel(level: app.lexa.domain.model.VocabLevel) { flow.value = flow.value.copy(vocabLevel = level) }
+    override suspend fun setSessionSize(size: Int) { flow.value = flow.value.copy(sessionSize = size) }
 }
 
 private class FakeScheduler : ReminderScheduler {

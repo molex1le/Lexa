@@ -32,6 +32,13 @@ private class FakeTrainingRepository : TrainingRepository {
         val i = (logId - 1).toInt()
         log[i] = log[i].copy(outcome = AnswerOutcome.OVERRIDDEN, toBox = toBox)
     }
+
+    val listTranslations = mutableMapOf<String, List<String>>()
+    val removed = mutableListOf<Long>()
+    val learned = mutableListOf<Long>()
+    override suspend fun translationsOf(term: String) = listTranslations[term].orEmpty()
+    override suspend fun remove(wordId: Long) { removed += wordId }
+    override suspend fun markLearned(wordId: Long, nowMillis: Long) { learned += wordId }
 }
 
 private class FakeDeck : DeckRepository {
@@ -51,6 +58,12 @@ private class FakeDeck : DeckRepository {
         undone += wordId
         known += term
     }
+
+    var addedToday = 0
+    val deckTranslations = mutableMapOf<String, String>()
+    override suspend fun addedSince(millis: Long) = addedToday
+    override suspend fun enrich(wordId: Long, term: String) = Unit
+    override suspend fun translationsOf(term: String) = deckTranslations[term]
 }
 
 class TrainingSessionTest {
@@ -137,7 +150,7 @@ class TrainingSessionTest {
         val cards = session.build(level = VocabLevel.B1)
         assertEquals(TrainingSession.SESSION_SIZE, cards.size)
         assertEquals(3, cards.count { it.deck == null })
-        assertEquals(TrainingSession.MAX_DUE, repo.askedLimit)
+        assertEquals(TrainingSession.maxDue(TrainingSession.SESSION_SIZE), repo.askedLimit)
     }
 
     @Test fun `without a level only due words are trained`() = runTest {
@@ -180,5 +193,73 @@ class TrainingSessionTest {
     @Test fun `deck word answered in the other direction expects the term`() = runTest {
         val c = with(TrainingSession) { DeckWord(VocabLevel.A1, "to eat", "есть, кушать").toCard() }
         assertTrue(session.answer(c, CardDirection.RU_EN, "eat", wasDue = false).check.isCorrect)
+    }
+
+    @Test fun `no new built-in words once ten joined today`() = runTest {
+        repo.due = List(3) { card() }
+        deck.words = List(30) { DeckWord(VocabLevel.B1, "w$it", "с$it") }
+        deck.addedToday = TrainingSession.DAILY_NEW_LIMIT
+        assertTrue(session.build(level = VocabLevel.B1).all { it.deck == null })
+    }
+
+    @Test fun `session size sets the number of cards and due words take at most 60 percent`() = runTest {
+        repo.due = List(30) { card() }
+        deck.words = List(30) { DeckWord(VocabLevel.B1, "w$it", "с$it") }
+        val cards = session.build(level = VocabLevel.B1, limit = 10)
+        assertEquals(10, cards.size)
+        assertEquals(6, cards.count { it.deck == null })
+    }
+
+    @Test fun `give up is wrong without looking at the text`() = runTest {
+        val r = session.answer(card(box = 3), CardDirection.EN_RU, "", wasDue = true, mode = AnswerMode.GAVE_UP)
+        assertIs<CheckResult.Wrong>(r.check)
+        assertEquals(1, r.transition.state.box)
+    }
+
+    @Test fun `a right answer after a hint does not move the word up`() = runTest {
+        val r = session.answer(card(box = 2), CardDirection.EN_RU, "поездка", wasDue = true, mode = AnswerMode.HINTED)
+        assertTrue(r.check.isCorrect)
+        assertEquals(2, r.transition.state.box)
+    }
+
+    @Test fun `a hinted built-in word joins the new words`() = runTest {
+        val c = with(TrainingSession) { reluctant.toCard() }
+        session.answer(c, CardDirection.EN_RU, "неохотный", wasDue = false, mode = AnswerMode.HINTED)
+        assertEquals(listOf("reluctant"), deck.added)
+    }
+
+    @Test fun `hint shows the first letter and a slot per letter`() =
+        assertEquals("j _ _ _ _ _ _", TrainingSession.hint(card().copy(term = "journey"), CardDirection.RU_EN))
+
+    @Test fun `another English word with the same translation is right without credit`() = runTest {
+        val c = card(box = 2).copy(term = "journey", translations = listOf("поездка, путешествие"))
+        deck.deckTranslations["trip"] = "поездка, путешествие"
+        val r = session.answer(c, CardDirection.RU_EN, "trip", wasDue = true)
+        assertEquals("journey", r.alsoRight)
+        assertEquals(2, r.transition.state.box)
+        assertTrue(repo.log.isEmpty())
+    }
+
+    @Test fun `a dictionary synonym is right without credit`() = runTest {
+        val c = card(box = 2).copy(term = "journey", synonyms = listOf("voyage"))
+        assertEquals("journey", session.answer(c, CardDirection.RU_EN, "Voyage", wasDue = true).alsoRight)
+    }
+
+    @Test fun `an unrelated English word is still wrong`() = runTest {
+        val c = card(box = 2).copy(term = "journey", translations = listOf("поездка"))
+        deck.deckTranslations["apple"] = "яблоко"
+        val r = session.answer(c, CardDirection.RU_EN, "apple", wasDue = true)
+        assertNull(r.alsoRight)
+        assertIs<CheckResult.Wrong>(r.check)
+    }
+
+    @Test fun `remove and mark known reach the right store`() = runTest {
+        session.remove(card(), null)
+        session.markKnown(card(), null)
+        assertEquals(listOf(7L), repo.removed)
+        assertEquals(listOf(7L), repo.learned)
+        val c = with(TrainingSession) { reluctant.toCard() }
+        session.markKnown(c, null)
+        assertTrue("reluctant" in deck.known)
     }
 }

@@ -1,5 +1,11 @@
 package app.lexa.ui.settings
 
+import androidx.compose.foundation.layout.Box
+
+import androidx.compose.ui.semantics.contentDescription
+
+import androidx.compose.ui.focus.onFocusChanged
+
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -62,6 +68,7 @@ import app.lexa.ui.theme.Spacing
 data class SettingsUiState(
     val direction: Direction = Direction.EN_RU,
     val vocabLevel: VocabLevel? = null,
+    val sessionSize: Int = Settings.DEFAULT_SESSION_SIZE,
     val reminderMinutes: Int = Settings.DEFAULT_REMINDER_MINUTES,
     val reminderEnabled: Boolean = false,
     /** Notifications were refused when the reminder was turned on. */
@@ -82,6 +89,7 @@ fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewMod
         onBack = onBack,
         onDirectionChange = viewModel::onDirectionChange,
         onLevelChange = viewModel::onLevelChange,
+        onSessionSizeChange = viewModel::onSessionSizeChange,
         onReminderToggle = { enabled ->
             val needsPermission = enabled && Build.VERSION.SDK_INT >= 33 &&
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
@@ -101,6 +109,7 @@ fun SettingsScreen(
     onReminderToggle: (Boolean) -> Unit = {},
     onReminderTimeChange: (Int) -> Unit = {},
     onLevelChange: (VocabLevel) -> Unit = {},
+    onSessionSizeChange: (Int) -> Unit = {},
 ) {
     var pickingTime by rememberSaveable { mutableStateOf(false) }
     val colors = LexaTheme.colors
@@ -130,6 +139,9 @@ fun SettingsScreen(
                     OptionRow(levelLabel(level), state.vocabLevel == level) { onLevelChange(level) }
                 }
             }
+            Spacer(Modifier.height(Spacing.xl))
+            SectionTitle(R.string.settings_session_title)
+            SessionSizeChoice(state.sessionSize, onSessionSizeChange)
             Spacer(Modifier.height(Spacing.xl))
             SectionTitle(R.string.settings_reminder_title)
             ReminderSwitch(state.reminderEnabled, onReminderToggle)
@@ -281,4 +293,50 @@ private fun OptionRow(label: String, selected: Boolean, onClick: () -> Unit) {
         Spacer(Modifier.width(Spacing.m))
         Text(label, style = LexaTheme.type.body, color = colors.ink)
     }
+}
+
+private val PRESET_SIZES = listOf(10, 20, 30)
+
+/** 10 / 20 / 30, or any number 5–100 typed in (applied on «Готово» or when the field loses focus). */
+@Composable
+private fun SessionSizeChoice(size: Int, onChange: (Int) -> Unit) {
+    val colors = LexaTheme.colors
+    val type = LexaTheme.type
+    Column(Modifier.selectableGroup()) {
+        PRESET_SIZES.forEach { preset -> OptionRow(preset.toString(), size == preset) { onChange(preset) } }
+    }
+    var text by rememberSaveable(size) { mutableStateOf(if (size in PRESET_SIZES) "" else size.toString()) }
+    val label = stringResource(R.string.settings_session_custom)
+    fun apply() {
+        text.toIntOrNull()?.let { onChange(it.coerceIn(Settings.SESSION_SIZES)) }
+    }
+    androidx.compose.foundation.text.BasicTextField(
+        value = text,
+        onValueChange = { value -> text = value.filter(Char::isDigit).take(3) },
+        singleLine = true,
+        textStyle = type.body.copy(color = colors.ink),
+        cursorBrush = androidx.compose.ui.graphics.SolidColor(colors.ink),
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
+            imeAction = androidx.compose.ui.text.input.ImeAction.Done,
+        ),
+        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { apply() }),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { if (!it.isFocused) apply() }
+            .semantics { contentDescription = label },
+        decorationBox = { field ->
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 52.dp)
+                    .background(colors.sheet, androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
+                    .padding(horizontal = Spacing.m),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                if (text.isEmpty()) Text(label, style = type.body, color = colors.pencil)
+                field()
+            }
+        },
+    )
 }

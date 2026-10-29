@@ -254,6 +254,30 @@ class ScreenshotTest(private val dark: Boolean) {
         ),
     )
 
+    private val ruCard = TrainingCardUi(prompt = "поездка, путешествие", ipa = null, box = 2, expectsEnglish = true)
+
+    @Test fun trainingHint() = trainingSnap(
+        "training_hint",
+        TrainingPhase.Question(ruCard, position = 4, total = 20, answer = "jo", hint = "j _ _ _ _ _ _"),
+    )
+
+    @Test fun trainingGaveUp() = trainingSnap(
+        "training_gave_up",
+        TrainingPhase.Feedback(
+            card = commuteCard, position = 5, total = 20, answer = "", verdict = Verdict.GAVE_UP,
+            correctAnswer = "ездить на работу, поездка на работу", boxAfter = 1, learned = false,
+            example = null, nextReviewDays = 0,
+        ),
+    )
+
+    @Test fun trainingAlsoRight() = trainingSnap(
+        "training_also_right",
+        TrainingPhase.Feedback(
+            card = ruCard, position = 4, total = 20, answer = "trip", verdict = Verdict.ALSO_RIGHT,
+            correctAnswer = "journey", boxAfter = 2, learned = false, example = null, alsoRight = "journey",
+        ),
+    )
+
     private fun homeSnap(name: String, state: HomeUiState) = snap(name) {
         WithBar(TopLevel.TRAINING) { HomeScreen(state, {}, {}, {}, it) }
     }

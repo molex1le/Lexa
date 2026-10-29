@@ -33,6 +33,8 @@ interface WordRepository {
     suspend fun purgeDeletedBefore(beforeMillis: Long)
     /** A learned word goes back to box 1, due today. */
     suspend fun returnToLearning(id: Long)
+    /** «Я это знаю»: the word counts as learned now. */
+    suspend fun markLearned(id: Long)
 }
 
 interface ReviewRepository {

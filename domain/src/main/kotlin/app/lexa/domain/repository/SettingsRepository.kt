@@ -13,4 +13,5 @@ interface SettingsRepository {
     suspend fun setReminderEnabled(enabled: Boolean)
     suspend fun setWordSort(sort: WordSort)
     suspend fun setVocabLevel(level: VocabLevel)
+    suspend fun setSessionSize(size: Int)
 }

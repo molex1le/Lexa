@@ -42,5 +42,17 @@ class WordViewModel @Inject constructor(
         viewModelScope.launch { words.returnToLearning(wordId) }
     }
 
+    fun onMarkKnown() {
+        viewModelScope.launch { words.markLearned(wordId) }
+    }
+
+    /** Hidden at once; deleted for good at the next start (like a swipe whose snackbar ran out). */
+    fun onDelete(done: () -> Unit) {
+        viewModelScope.launch {
+            words.softDelete(wordId)
+            done()
+        }
+    }
+
     override fun onCleared() = pronouncer.release()
 }

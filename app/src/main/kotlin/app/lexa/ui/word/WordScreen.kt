@@ -1,5 +1,15 @@
 package app.lexa.ui.word
 
+import androidx.compose.ui.text.style.TextDecoration
+
+import androidx.compose.ui.semantics.Role
+
+import androidx.compose.foundation.clickable
+
+import androidx.compose.foundation.layout.heightIn
+
+import androidx.compose.foundation.layout.Box
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -48,6 +58,8 @@ data class WordActions(
     val onToggleFavorite: () -> Unit = {},
     val onPronounce: () -> Unit = {},
     val onReturnToLearning: () -> Unit = {},
+    val onMarkKnown: () -> Unit = {},
+    val onDelete: () -> Unit = {},
     val onTranslateQuery: (String) -> Unit = {},
 )
 
@@ -61,6 +73,8 @@ fun WordRoute(onBack: () -> Unit, onTranslateQuery: (String) -> Unit, viewModel:
             onToggleFavorite = viewModel::onToggleFavorite,
             onPronounce = viewModel::onPronounce,
             onReturnToLearning = viewModel::onReturnToLearning,
+            onMarkKnown = viewModel::onMarkKnown,
+            onDelete = { viewModel.onDelete(onBack) },
             onTranslateQuery = onTranslateQuery,
         ),
     )
@@ -167,9 +181,25 @@ fun WordScreen(state: WordUiState, actions: WordActions = WordActions(), modifie
                         style = type.meta,
                         color = colors.pencil,
                     )
+                    Spacer(Modifier.height(Spacing.m))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.l)) {
+                        if (learnedAt == null) WordTextAction(stringResource(R.string.training_mark_known), actions.onMarkKnown)
+                        WordTextAction(stringResource(R.string.word_delete), actions.onDelete)
+                    }
                     Spacer(Modifier.height(Spacing.xl))
                 }
             }
         }
+    }
+}
+
+/** Underlined ink text with a 48dp target: the card's secondary actions. */
+@Composable
+private fun WordTextAction(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier.heightIn(min = Spacing.touch).clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(label, style = LexaTheme.type.body.copy(textDecoration = TextDecoration.Underline), color = LexaTheme.colors.ink)
     }
 }

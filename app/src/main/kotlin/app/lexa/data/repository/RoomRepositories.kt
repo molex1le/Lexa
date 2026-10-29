@@ -112,6 +112,12 @@ class RoomWordRepository @Inject constructor(
     override suspend fun purgeDeletedBefore(beforeMillis: Long) = dao.purgeDeletedBefore(beforeMillis)
 
     override suspend fun returnToLearning(id: Long) = dao.returnToLearning(id, time.today().startMillis(time.zone))
+
+    override suspend fun markLearned(id: Long) {
+        val word = dao.find(id) ?: return
+        val now = time.nowMillis()
+        dao.updateSchedule(id, LeitnerRules.LAST_BOX, word.nextReviewAt, word.mistakesCount, now, now)
+    }
 }
 
 class RoomStatsRepository @Inject constructor(

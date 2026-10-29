@@ -48,6 +48,7 @@ private object FixedSettings : SettingsRepository {
     override suspend fun setReminderEnabled(enabled: Boolean) = Unit
     override suspend fun setWordSort(sort: WordSort) = Unit
     override suspend fun setVocabLevel(level: app.lexa.domain.model.VocabLevel) = Unit
+    override suspend fun setSessionSize(size: Int) = Unit
 }
 
 /** The session state machine against an in-memory database whose queries run inline. */
@@ -89,6 +90,7 @@ class HomeViewModelTest {
         TrainingSession(RoomTrainingRepository(db), deck, LeitnerScheduler(time), time),
         deck,
         time,
+        app.lexa.ui.translator.Pronouncer(androidx.test.core.app.ApplicationProvider.getApplicationContext()),
     )
 
     /** Runs what is queued now, never the midnight ticker's day-long delay. */
