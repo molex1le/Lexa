@@ -21,6 +21,9 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Modern phones only: ML Kit ships a ~16 MB native library per ABI, and the other three
+        // (armeabi-v7a, x86, x86_64) would add ~45 MB for devices the owner doesn't use.
+        ndk { abiFilters += "arm64-v8a" }
     }
 
     buildTypes {
@@ -28,6 +31,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Personal build: signed with the local debug key so it installs without a release keystore.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
