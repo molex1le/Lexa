@@ -34,7 +34,7 @@ private const val SHOWN_CANDIDATES = 3
 class HomeViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     words: WordRepository,
-    stats: StatsRepository,
+    private val stats: StatsRepository,
     private val settings: SettingsRepository,
     private val training: TrainingSession,
     private val time: TimeProvider,
@@ -61,6 +61,10 @@ class HomeViewModel @Inject constructor(
     private var lastResult: AnswerResult? = null
     private var busy = false
 
+    /** One celebration per session (CLAUDE.md §3): a learned word or a beaten best streak. */
+    private var celebrated = false
+    private var bestStreakAtStart = 0
+
     /**
      * Starts a session of due words. [practice] trains the hardest words outside the schedule
      * (wired to «Повторить их сейчас» in phase 4): correct answers there do not move the box.
@@ -71,6 +75,8 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 this@HomeViewModel.practice = practice
+                celebrated = false
+                bestStreakAtStart = stats.observeStreak(time.today()).first().best
                 val direction = settings.settings.first().direction
                 cards = training.build(practice)
                 directions = cards.map {
@@ -110,6 +116,7 @@ class HomeViewModel @Inject constructor(
                     is CheckResult.AcceptedWithTypo -> Verdict.TYPO
                     is CheckResult.Wrong -> Verdict.WRONG
                 }
+                val celebration = celebrationFor(result)
                 session.value = TrainingPhase.Feedback(
                     card = phase.card,
                     position = phase.position,
@@ -123,6 +130,7 @@ class HomeViewModel @Inject constructor(
                     boxAfter = result.transition.state.box,
                     learned = result.transition.learned,
                     example = card.example,
+                    celebration = celebration,
                 )
             } finally {
                 busy = false
@@ -149,6 +157,19 @@ class HomeViewModel @Inject constructor(
                 busy = false
             }
         }
+    }
+
+    private suspend fun celebrationFor(result: AnswerResult): Celebration? {
+        if (celebrated || !result.check.isCorrect) return null
+        val celebration = if (result.transition.learned) {
+            Celebration.Learned
+        } else {
+            // The first answer of the day extends the streak; it is a record only past the best one so far.
+            val streak = stats.observeStreak(time.today()).first().current
+            if (streak >= 2 && streak > bestStreakAtStart) Celebration.StreakRecord(streak) else null
+        }
+        if (celebration != null) celebrated = true
+        return celebration
     }
 
     fun next() {

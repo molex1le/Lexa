@@ -40,6 +40,7 @@ data class HomeUiState(
 fun HomeRoute(
     onOpenSettings: () -> Unit,
     onTranslate: () -> Unit,
+    onWordReturned: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -54,6 +55,7 @@ fun HomeRoute(
             onOverride = viewModel::overrideAsTypo,
             onNext = viewModel::next,
             onFinish = viewModel::finish,
+            onWordReturned = onWordReturned,
         ),
     )
 }

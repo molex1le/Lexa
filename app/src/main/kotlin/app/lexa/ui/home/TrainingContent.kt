@@ -25,6 +25,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import app.lexa.ui.components.FitWordText
+import app.lexa.ui.components.markedTextColor
+import app.lexa.ui.components.markerHighlight
+import app.lexa.ui.components.rememberReducedMotion
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -59,6 +74,12 @@ data class TrainingCardUi(
 
 enum class Verdict { CORRECT, TYPO, WRONG, OVERRIDDEN }
 
+/** The one short celebration a session may have (CLAUDE.md §3 «Движение»). */
+sealed interface Celebration {
+    data object Learned : Celebration
+    data class StreakRecord(val days: Int) : Celebration
+}
+
 /** The training state machine shown on the «Тренировка» tab while a session runs. */
 sealed interface TrainingPhase {
     data class Question(
@@ -81,6 +102,8 @@ sealed interface TrainingPhase {
         val boxAfter: Int,
         val learned: Boolean,
         val example: Example?,
+        /** Set on at most one answer per session. */
+        val celebration: Celebration? = null,
     ) : TrainingPhase
 
     data class Done(val correct: Int, val total: Int) : TrainingPhase
@@ -93,6 +116,8 @@ class TrainingActions(
     val onOverride: () -> Unit = {},
     val onNext: () -> Unit = {},
     val onFinish: () -> Unit = {},
+    /** A wrong answer sent the word back to «Новые»: the «Слова» tab pulses once. */
+    val onWordReturned: () -> Unit = {},
 )
 
 @Composable
@@ -117,20 +142,46 @@ fun TrainingContent(phase: TrainingPhase, actions: TrainingActions, modifier: Mo
 }
 
 @Composable
-private fun CardHead(card: TrainingCardUi, position: Int, total: Int, box: @Composable () -> Unit) {
-    val colors = LexaTheme.colors
-    val type = LexaTheme.type
+private fun Progress(position: Int, total: Int) {
     Box(Modifier.heightIn(min = Spacing.touch), contentAlignment = Alignment.CenterStart) {
-        Text(stringResource(R.string.training_progress, position, total), style = type.meta, color = colors.pencil)
+        Text(
+            stringResource(R.string.training_progress, position, total),
+            style = LexaTheme.type.meta,
+            color = LexaTheme.colors.pencil,
+        )
     }
     Spacer(Modifier.height(Spacing.l))
-    Text(card.prompt, style = type.word, color = colors.ink)
-    if (card.ipa != null) {
-        Spacer(Modifier.height(Spacing.s))
-        Text(card.ipa, style = type.meta, color = colors.pencil)
+}
+
+/**
+ * The face of the card: the word, its IPA and the box. [rotationY] turns it around the vertical axis
+ * (the flip when feedback appears); [term] may decorate the word, e.g. with the flying copy.
+ */
+@Composable
+private fun CardFace(
+    card: TrainingCardUi,
+    rotationY: Float = 0f,
+    term: @Composable (@Composable () -> Unit) -> Unit = { it() },
+    box: @Composable () -> Unit,
+) {
+    val colors = LexaTheme.colors
+    val type = LexaTheme.type
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                this.rotationY = rotationY
+                cameraDistance = 16f * density
+            },
+    ) {
+        term { FitWordText(card.prompt, style = type.word, color = colors.ink, modifier = Modifier.fillMaxWidth()) }
+        if (card.ipa != null) {
+            Spacer(Modifier.height(Spacing.s))
+            Text(card.ipa, style = type.meta, color = colors.pencil)
+        }
+        Spacer(Modifier.height(Spacing.m))
+        box()
     }
-    Spacer(Modifier.height(Spacing.m))
-    box()
     Spacer(Modifier.height(Spacing.xl))
 }
 
@@ -140,7 +191,8 @@ private fun QuestionCard(phase: TrainingPhase.Question, actions: TrainingActions
     val type = LexaTheme.type
     val focus = remember { FocusRequester() }
     val label = stringResource(R.string.training_answer_label)
-    CardHead(phase.card, phase.position, phase.total) { BoxIndicator(phase.card.box) }
+    Progress(phase.position, phase.total)
+    CardFace(phase.card) { BoxIndicator(phase.card.box) }
     BasicTextField(
         value = phase.answer,
         onValueChange = actions.onAnswerChange,
@@ -187,15 +239,45 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
     val colors = LexaTheme.colors
     val type = LexaTheme.type
     val haptics = LocalHapticFeedback.current
+    val reduced = rememberReducedMotion()
     val correct = phase.verdict != Verdict.WRONG
-    // The marker settles into the box the word moved to; a wrong answer shows box 1 without motion.
-    val landing = remember(phase.position, phase.verdict) { Animatable(if (correct) 0f else 1f) }
+    // The card turns over (0→180°), then the marker slides from the old box into the new one with a small
+    // overshoot; a wrong answer shows box 1 without a slide, and a copy of the word flies off to «Слова».
+    val flip = remember(phase.position) { Animatable(if (reduced) 180f else 0f) }
+    val markerAt = remember(phase.position) {
+        Animatable(if (correct && !reduced) phase.card.box.toFloat() else phase.boxAfter.toFloat())
+    }
+    val flight = remember(phase.position) { Animatable(0f) }
+    val celebrate = remember(phase.position) { Animatable(if (reduced) 1f else 0f) }
+    var returned by remember(phase.position) { mutableStateOf(false) }
     LaunchedEffect(phase.position, phase.verdict) {
         haptics.performHapticFeedback(if (correct) HapticFeedbackType.Confirm else HapticFeedbackType.Reject)
-        landing.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow))
+        flip.animateTo(180f, spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMedium))
+        val box = phase.boxAfter.toFloat()
+        if (reduced) markerAt.snapTo(box)
+        else markerAt.animateTo(box, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow))
+        if (phase.verdict == Verdict.WRONG && !returned) {
+            returned = true
+            if (!reduced) flight.animateTo(1f, spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow))
+            actions.onWordReturned()
+        }
+        if (phase.celebration != null && !reduced) {
+            celebrate.animateTo(1f, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow))
+        }
     }
-    CardHead(phase.card, phase.position, phase.total) {
-        BoxIndicator(phase.boxAfter, markerProgress = landing.value)
+    Progress(phase.position, phase.total)
+    val angle = flip.value
+    if (angle < 90f) {
+        // Front: the question as it was, turning away. Text is never shown mirrored.
+        CardFace(phase.card, rotationY = angle) { BoxIndicator(phase.card.box) }
+    } else {
+        CardFace(
+            phase.card,
+            rotationY = angle - 180f,
+            term = { word -> FlyingWord(phase.card.prompt, flight.value, word) },
+        ) {
+            BoxIndicator(phase.boxAfter, markerAt = markerAt.value)
+        }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
@@ -221,7 +303,20 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
                 Text(phase.correctAnswer, style = type.body, color = colors.ink)
             }
         }
-        Text(statusLine(phase), style = type.meta, color = colors.pencil)
+        when (val celebration = phase.celebration) {
+            null -> Text(statusLine(phase), style = type.meta, color = colors.pencil)
+            Celebration.Learned -> CelebrationLine(statusLine(phase), celebrate.value)
+            is Celebration.StreakRecord -> {
+                Text(statusLine(phase), style = type.meta, color = colors.pencil)
+                CelebrationLine(
+                    stringResource(
+                        R.string.training_streak_record,
+                        pluralStringResource(R.plurals.days, celebration.days, celebration.days),
+                    ),
+                    celebrate.value,
+                )
+            }
+        }
     }
 
     if (phase.verdict == Verdict.WRONG) {
@@ -245,6 +340,59 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
     }
     Spacer(Modifier.height(if (phase.verdict == Verdict.WRONG) Spacing.m else Spacing.l))
     MarkerButton(stringResource(R.string.training_next), onClick = actions.onNext)
+}
+
+/**
+ * The word, plus a copy of it that shrinks and slides toward the «Слова» tab and fades out, as
+ * [progress] goes 0→1. The copy is drawn only while it moves; the word itself never leaves.
+ */
+@Composable
+private fun FlyingWord(term: String, progress: Float, word: @Composable () -> Unit) {
+    val view = LocalView.current
+    val tabOffset = with(LocalDensity.current) { 32.dp.toPx() }
+    var center by remember { mutableStateOf(Offset.Zero) }
+    Box(Modifier.onGloballyPositioned { center = it.boundsInRoot().center }) {
+        word()
+        if (progress > 0f && progress < 1f) {
+            // «Слова» is the third of four tabs: its centre is at 5/8 of the width, at the bottom.
+            val dx = view.width * 5f / 8f - center.x
+            val dy = view.height - tabOffset - center.y
+            Text(
+                term,
+                style = LexaTheme.type.word,
+                color = LexaTheme.colors.ink,
+                maxLines = 1,
+                modifier = Modifier
+                    .clearAndSetSemantics {}
+                    .graphicsLayer {
+                        translationX = dx * progress
+                        translationY = dy * progress
+                        val scale = 1f - 0.8f * progress
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = 1f - progress
+                    },
+            )
+        }
+    }
+}
+
+/** The celebration: a marker sweeps across the line left to right while it settles from a slight zoom. */
+@Composable
+private fun CelebrationLine(text: String, progress: Float) {
+    Text(
+        text,
+        style = LexaTheme.type.title,
+        color = markedTextColor(),
+        modifier = Modifier
+            .graphicsLayer {
+                val scale = 1.08f - 0.08f * progress
+                scaleX = scale
+                scaleY = scale
+                transformOrigin = TransformOrigin(0f, 0.5f)
+            }
+            .markerHighlight(progress),
+    )
 }
 
 @Composable

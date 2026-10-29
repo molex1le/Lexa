@@ -29,6 +29,7 @@
     <string name="training_correct_learned">Верно&#160;– слово выучено</string>
     <string name="training_typo">Засчитано с опечаткой. Правильно:</string>
     <string name="training_your_answer_wrong">Твой ответ: %1$s, неверно</string>
+    <string name="training_streak_record">Новый рекорд серии&#160;– %1$s подряд</string>
     <string name="training_back_to_new">Слово вернулось в «Новые»</string>
     <string name="training_override">Я знал, это опечатка</string>
     <string name="training_overridden_box">Засчитано&#160;– теперь в коробке %1$d из 5</string>
@@ -120,7 +121,7 @@
     <string name="stats_month">Месяц %1$s</string>
     <string name="stats_chart_start">30 дней назад</string>
     <string name="stats_chart_end">сегодня</string>
-    <string name="stats_chart_description">Выучено по дням за последние 30 дней, всего %1$s</string>
+    <string name="stats_chart_description">Выучено по дням за последние 30 дней, всего %1$s, сегодня %2$s</string>
     <string name="stats_chart_empty">За 30 дней ни одного выученного слова. Слово считается выученным после пятой коробки</string>
     <string name="stats_streak_title">Серия</string>
     <string name="stats_streak_best">Лучшая серия&#160;– %1$s</string>

@@ -1,8 +1,11 @@
 package app.lexa.ui.translator
 
-import android.provider.Settings
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.ui.semantics.heading
+import app.lexa.ui.components.rememberReducedMotion
+import app.lexa.ui.components.FitWordText
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -237,7 +239,12 @@ private fun Recent(recent: List<HistoryItem>, onTranslateQuery: (String) -> Unit
         Text(stringResource(R.string.translator_empty), style = type.body, color = colors.pencil)
         return
     }
-    Text(stringResource(R.string.translator_recent), style = type.title, color = colors.ink)
+    Text(
+        stringResource(R.string.translator_recent),
+        style = type.title,
+        color = colors.ink,
+        modifier = Modifier.semantics { heading() },
+    )
     Spacer(Modifier.height(Spacing.s))
     recent.forEach { item ->
         Text(
@@ -266,15 +273,6 @@ internal fun ErrorBlock(error: LookupError) {
     Text(stringResource(hint), style = LexaTheme.type.body, color = LexaTheme.colors.pencil)
 }
 
-/** True when the system «Убрать анимацию» (animator duration scale 0) is on. */
-@Composable
-private fun rememberReducedMotion(): Boolean {
-    val resolver = LocalContext.current.contentResolver
-    return remember(resolver) {
-        Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-    }
-}
-
 /** The result of a lookup: shared by the «Перевод» tab and the translate sheet (TranslateActivity). */
 @Composable
 internal fun TranslationResult(
@@ -294,17 +292,18 @@ internal fun TranslationResult(
     LaunchedEffect(Unit) { target = 1f }
     val progress by animateFloatAsState(
         targetValue = if (inList) target else 0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 400f),
+        animationSpec = if (reducedMotion) snap() else spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 400f),
         label = "marker",
     )
 
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Text(
+        FitWordText(
             text = t.term,
             style = type.word,
             // On the dark theme the ink turns dark only as the marker arrives, so no letter is ever dark on dark.
             color = if (inList) lerp(colors.ink, markedTextColor(), progress) else colors.ink,
-            modifier = Modifier.weight(1f, fill = false).markerHighlight(progress),
+            modifier = Modifier.weight(1f, fill = false),
+            textModifier = Modifier.markerHighlight(progress),
         )
         if (inList) {
             LexaIconButton(
@@ -357,7 +356,12 @@ internal fun TranslationResult(
 @Composable
 internal fun BlockTitle(text: Int) {
     Spacer(Modifier.height(Spacing.l))
-    Text(stringResource(text), style = LexaTheme.type.title, color = LexaTheme.colors.ink)
+    Text(
+        stringResource(text),
+        style = LexaTheme.type.title,
+        color = LexaTheme.colors.ink,
+        modifier = Modifier.semantics { heading() },
+    )
     Spacer(Modifier.height(Spacing.s))
 }
 

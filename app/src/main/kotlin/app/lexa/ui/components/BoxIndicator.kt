@@ -21,10 +21,11 @@ private val SlotGap = 6.dp
 /**
  * Five card-index compartments under the word (docs/DESIGN_TOKENS.md «Коробки Лейтнера»):
  * boxes already passed are ink, the current box is ink with a marker band, the rest are sheet.
- * [markerProgress] 0..1 grows the marker band up from the bottom, to show the word landing in its box.
+ * [markerAt] is where the marker band sits, in boxes: animated from the old box to [box] it slides
+ * across the compartments (a spring may carry it slightly past the new box and back).
  */
 @Composable
-fun BoxIndicator(box: Int, modifier: Modifier = Modifier, markerProgress: Float = 1f) {
+fun BoxIndicator(box: Int, modifier: Modifier = Modifier, markerAt: Float = box.toFloat()) {
     val colors = LexaTheme.colors
     val count = LeitnerRules.LAST_BOX
     val description = stringResource(R.string.word_boxes_description, box)
@@ -39,13 +40,12 @@ fun BoxIndicator(box: Int, modifier: Modifier = Modifier, markerProgress: Float 
             val x = (slot - 1) * step
             when {
                 slot < box -> drawRect(colors.ink, Offset(x, 0f), Size(w, size.height))
-                slot == box -> {
-                    drawRect(colors.ink, Offset(x, 0f), Size(w, size.height))
-                    val band = size.height * 0.4f * markerProgress.coerceIn(0f, 1.2f)
-                    drawRect(colors.marker, Offset(x, size.height - band), Size(w, band))
-                }
+                slot == box -> drawRect(colors.ink, Offset(x, 0f), Size(w, size.height))
                 else -> drawRect(colors.sheet, Offset(x, 0f), Size(w, size.height))
             }
         }
+        val band = size.height * 0.4f
+        val markerX = (markerAt.coerceIn(LeitnerRules.FIRST_BOX - 0.3f, count + 0.3f) - 1f) * step
+        drawRect(colors.marker, Offset(markerX, size.height - band), Size(w, band))
     }
 }

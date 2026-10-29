@@ -17,12 +17,21 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.graphicsLayer
+import app.lexa.ui.components.rememberReducedMotion
+import app.lexa.ui.components.FitWordText
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.lexa.R
 import app.lexa.ui.components.LexaIcon
@@ -45,8 +54,18 @@ fun LexaBottomBar(
     current: TopLevel?,
     onSelect: (TopLevel) -> Unit,
     modifier: Modifier = Modifier,
+    wordsPulse: Int = 0,
 ) {
     val colors = LexaTheme.colors
+    // A wrong answer sends the word back to «Новые»: the «Слова» item answers with one pulse 1→1.15→1.
+    val reduced = rememberReducedMotion()
+    val pulse = remember { Animatable(1f) }
+    LaunchedEffect(wordsPulse) {
+        if (wordsPulse == 0 || reduced) return@LaunchedEffect
+        pulse.animateTo(1.15f, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessHigh))
+        pulse.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+    }
+    val labels = TopLevel.entries.map { stringResource(it.label) }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -63,21 +82,29 @@ fun LexaBottomBar(
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = 64.dp)
-                    .selectable(selected = selected, role = Role.Tab, onClick = { onSelect(item) }),
+                    .selectable(selected = selected, role = Role.Tab, onClick = { onSelect(item) })
+                    .graphicsLayer {
+                        val scale = if (item == TopLevel.WORDS) pulse.value else 1f
+                        scaleX = scale
+                        scaleY = scale
+                    },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
                 // The label below names the item, so the icon is decorative for TalkBack.
                 LexaIcon(item.icon, contentDescription = null, tint = tint)
                 Spacer(Modifier.height(Spacing.xs))
-                Text(
-                    text = stringResource(item.label),
-                    style = LexaTheme.type.meta.copy(
-                        fontWeight = if (selected) FontWeight(600) else FontWeight(400),
-                    ),
+                // With a large system font «Тренировка» would not fit a quarter of 360dp: the label
+                // steps down in size (never below 10sp) instead of being cut; all four share one size,
+                // measured at the active weight so switching tabs never changes it.
+                FitWordText(
+                    text = labels[item.ordinal],
+                    style = LexaTheme.type.meta.copy(fontWeight = if (selected) FontWeight(600) else FontWeight(400)),
+                    fitAll = labels,
+                    measureStyle = LexaTheme.type.meta.copy(fontWeight = FontWeight(600)),
                     color = tint,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = Spacing.xs),
+                    minFontSize = 10.sp,
                 )
             }
         }
