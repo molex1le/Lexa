@@ -22,6 +22,7 @@ import app.lexa.domain.model.WordSummary
 import app.lexa.ui.components.BoxIndicator
 import app.lexa.ui.components.EmptyState
 import app.lexa.ui.components.LexaIconButton
+import app.lexa.ui.components.markedTextColor
 import app.lexa.ui.components.markerHighlight
 import app.lexa.ui.theme.LexaTheme
 import app.lexa.ui.theme.Spacing
@@ -60,7 +61,7 @@ fun WordScreen(state: WordUiState, onBack: () -> Unit, modifier: Modifier = Modi
                     Text(
                         text = word.term,
                         style = LexaTheme.type.word,
-                        color = colors.ink,
+                        color = if (isNew) markedTextColor() else colors.ink,
                         modifier = Modifier
                             .then(if (isNew) Modifier.markerHighlight() else Modifier)
                             .semantics { heading() },

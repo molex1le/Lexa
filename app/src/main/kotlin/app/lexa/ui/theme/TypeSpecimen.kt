@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import app.lexa.ui.components.BoxIndicator
 import app.lexa.ui.components.MarkerButton
+import app.lexa.ui.components.markedTextColor
 import app.lexa.ui.components.markerHighlight
 
 /**
@@ -28,7 +29,7 @@ fun TypeSpecimen(modifier: Modifier = Modifier) {
             .padding(Spacing.gutter),
     ) {
         Spacer(Modifier.height(Spacing.l))
-        Text("thoughtful", style = type.word, color = colors.ink, modifier = Modifier.markerHighlight())
+        Text("thoughtful", style = type.word, color = markedTextColor(), modifier = Modifier.markerHighlight())
         Spacer(Modifier.height(Spacing.s))
         Text("/ˈθɔːtfəl ˌʌndəˈstændɪŋ/", style = type.meta, color = colors.pencil)
         Spacer(Modifier.height(Spacing.s))

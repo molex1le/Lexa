@@ -54,15 +54,16 @@ private fun DrawScope.drawMarkerBand(
 }
 
 /**
- * The marker stroke behind the lower ~55 % of a line of text (docs/DESIGN_TOKENS.md
- * «Фирменный элемент»). [progress] 0..1 reveals the band from left to right; the animation itself
- * belongs to the caller (phase 6).
+ * The marker stroke behind a line of text (docs/DESIGN_TOKENS.md «Фирменный элемент»). By default it
+ * covers the lower part of the letters; [fullHeight] covers the whole line, for the dark theme, where
+ * the text on it must switch to dark ink to stay readable. [progress] 0..1 reveals the band from left
+ * to right; the animation itself belongs to the caller (phase 6).
  */
-fun Modifier.markerHighlight(progress: Float, color: Color): Modifier = drawBehind {
+fun Modifier.markerHighlight(progress: Float, color: Color, fullHeight: Boolean = false): Modifier = drawBehind {
     if (progress <= 0f) return@drawBehind
     val overhang = MarkerOverhang.toPx()
-    val top = size.height * 0.45f
-    val bottom = size.height * 0.92f
+    val top = size.height * if (fullHeight) 0.1f else 0.55f
+    val bottom = size.height * if (fullHeight) 0.98f else 0.9f
     val band = Size(size.width + overhang * 2, bottom - top)
     val left = -overhang
     clipRect(left = left, top = top, right = left + band.width * progress.coerceIn(0f, 1f), bottom = bottom) {
@@ -70,10 +71,17 @@ fun Modifier.markerHighlight(progress: Float, color: Color): Modifier = drawBehi
     }
 }
 
-/** [markerHighlight] in the theme's marker colour. */
+/**
+ * [markerHighlight] in the theme's marker colour. Light ink reads on the lower band; on the dark
+ * theme the band covers the whole line and the text must use [markedTextColor].
+ */
 @Composable
 fun Modifier.markerHighlight(progress: Float = 1f): Modifier =
-    markerHighlight(progress, LexaTheme.colors.marker)
+    markerHighlight(progress, LexaTheme.colors.marker, fullHeight = LexaTheme.colors.isDark)
+
+/** Text colour for a word under [markerHighlight]: dark ink on the marker in both themes. */
+@Composable
+fun markedTextColor(): Color = with(LexaTheme.colors) { if (isDark) onMarker else ink }
 
 /**
  * The one primary action of a screen: a marker stroke across the whole button with slanted ends,
