@@ -85,7 +85,8 @@ fun markedTextColor(): Color = with(LexaTheme.colors) { if (isDark) onMarker els
 
 /**
  * The one primary action of a screen: a marker stroke across the whole button with slanted ends,
- * labelled with a verb in dark ink (same ink in both themes). 52dp tall.
+ * labelled with a verb in dark ink (same ink in both themes). 52dp tall. Disabled, it keeps its place
+ * but shows only the label in pencil.
  */
 @Composable
 fun MarkerButton(
@@ -96,7 +97,8 @@ fun MarkerButton(
     height: Dp = 52.dp,
 ) {
     val colors = LexaTheme.colors
-    val fill = if (enabled) colors.marker else colors.sheet
+    // Disabled is just the pencil label: a grey slab would be a second heavy shape next to the one marker.
+    val fill = if (enabled) colors.marker else Color.Transparent
     val label = if (enabled) colors.onMarker else colors.pencil
     val interaction = remember { MutableInteractionSource() }
     Box(

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -160,7 +161,7 @@ fun TranslatorScreen(
                     enabled = state.canTranslate,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Spacer(Modifier.height(Spacing.xl))
+                Spacer(Modifier.height(Spacing.l))
                 when (val phase = state.phase) {
                     TranslatorPhase.Idle -> Recent(state.recent, onTranslateQuery)
                     is TranslatorPhase.Loading -> Text(
@@ -296,11 +297,12 @@ private fun ResultBlock(
         label = "marker",
     )
 
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = t.term,
             style = type.word,
-            color = if (inList) markedTextColor() else colors.ink,
+            // On the dark theme the ink turns dark only as the marker arrives, so no letter is ever dark on dark.
+            color = if (inList) lerp(colors.ink, markedTextColor(), progress) else colors.ink,
             modifier = Modifier.weight(1f, fill = false).markerHighlight(progress),
         )
         if (inList) {
