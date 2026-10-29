@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -243,14 +244,20 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
     val correct = phase.verdict != Verdict.WRONG
     // The card turns over (0→180°), then the marker slides from the old box into the new one with a small
     // overshoot; a wrong answer shows box 1 without a slide, and a copy of the word flies off to «Слова».
-    val flip = remember(phase.position) { Animatable(if (reduced) 180f else 0f) }
+    // What already played for this card survives rotation, so turning the phone does not replay the
+    // flip, the haptic or the flight.
+    var played by rememberSaveable(phase.position) { mutableStateOf<Verdict?>(null) }
+    var returned by rememberSaveable(phase.position) { mutableStateOf(false) }
+    val still = reduced || played != null
+    val flip = remember(phase.position) { Animatable(if (still) 180f else 0f) }
     val markerAt = remember(phase.position) {
-        Animatable(if (correct && !reduced) phase.card.box.toFloat() else phase.boxAfter.toFloat())
+        Animatable(if (correct && !still) phase.card.box.toFloat() else phase.boxAfter.toFloat())
     }
-    val flight = remember(phase.position) { Animatable(0f) }
-    val celebrate = remember(phase.position) { Animatable(if (reduced) 1f else 0f) }
-    var returned by remember(phase.position) { mutableStateOf(false) }
+    val flight = remember(phase.position) { Animatable(if (returned && phase.verdict == Verdict.WRONG) 1f else 0f) }
+    val celebrate = remember(phase.position) { Animatable(if (still) 1f else 0f) }
     LaunchedEffect(phase.position, phase.verdict) {
+        if (played == phase.verdict) return@LaunchedEffect
+        played = phase.verdict
         haptics.performHapticFeedback(if (correct) HapticFeedbackType.Confirm else HapticFeedbackType.Reject)
         flip.animateTo(180f, spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMedium))
         val box = phase.boxAfter.toFloat()
@@ -260,6 +267,11 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
             returned = true
             if (!reduced) flight.animateTo(1f, spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow))
             actions.onWordReturned()
+        }
+        // «Я знал, это опечатка»: the word did not go back after all – the copy flies home again.
+        if (phase.verdict == Verdict.OVERRIDDEN && flight.value > 0f) {
+            if (reduced) flight.snapTo(0f)
+            else flight.animateTo(0f, spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow))
         }
         if (phase.celebration != null && !reduced) {
             celebrate.animateTo(1f, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow))

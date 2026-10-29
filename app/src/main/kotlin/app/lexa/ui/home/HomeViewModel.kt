@@ -18,6 +18,9 @@ import javax.inject.Inject
 import kotlin.random.Random
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.shareIn
+import app.lexa.domain.time.nowTicks
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -40,9 +43,16 @@ class HomeViewModel @Inject constructor(
     private val time: TimeProvider,
 ) : ViewModel() {
 
-    /** "Now" for the due count; moved forward when a session ends so answered words drop out. */
-    private val now = MutableStateFlow(time.nowMillis())
+    /**
+     * "Now" for the due count and the streak: re-read at local midnight, on [refresh] (screen resumed)
+     * and when a session ends, so answered words drop out and a new day is seen without a restart.
+     */
+    private val refreshes = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val now = time.nowTicks(refreshes).shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
     private val session = MutableStateFlow<TrainingPhase?>(null)
+
+    /** The running session alone, for tests that should not depend on the Room flows behind [state]. */
+    internal val phase: StateFlow<TrainingPhase?> get() = session
 
     val state: StateFlow<HomeUiState> = combine(
         now.flatMapLatest { words.observeDueCount(it) },
@@ -95,7 +105,13 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /** Re-reads "now" (called when the screen resumes). */
+    fun refresh() {
+        refreshes.tryEmit(Unit)
+    }
+
     fun onAnswerChange(text: String) {
+        if (busy) return
         val phase = session.value as? TrainingPhase.Question ?: return
         session.value = phase.copy(answer = text)
     }
@@ -117,6 +133,8 @@ class HomeViewModel @Inject constructor(
                     is CheckResult.Wrong -> Verdict.WRONG
                 }
                 val celebration = celebrationFor(result)
+                // A result only lands on the card it was computed for.
+                if (session.value !== phase) return@launch
                 session.value = TrainingPhase.Feedback(
                     card = phase.card,
                     position = phase.position,
@@ -148,6 +166,7 @@ class HomeViewModel @Inject constructor(
             try {
                 val transition = training.override(cards[index], result.logId, wasDue = !practice)
                 correct++
+                if (session.value !== phase) return@launch
                 session.value = phase.copy(
                     verdict = Verdict.OVERRIDDEN,
                     boxAfter = transition.state.box,
@@ -173,16 +192,19 @@ class HomeViewModel @Inject constructor(
     }
 
     fun next() {
-        if (session.value !is TrainingPhase.Feedback) return
+        // While an answer or an override is being written, «Дальше» waits: otherwise the late result
+        // would overwrite the next card.
+        if (busy || session.value !is TrainingPhase.Feedback) return
         index++
         lastResult = null
         session.value = if (index < cards.size) question() else TrainingPhase.Done(correct = correct, total = cards.size)
     }
 
     fun finish() {
+        if (busy) return
         session.value = null
         cards = emptyList()
-        now.value = time.nowMillis()
+        refresh()
     }
 
     private fun question(): TrainingPhase.Question {

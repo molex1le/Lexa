@@ -16,6 +16,7 @@ import app.lexa.ui.components.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import app.lexa.R
 import app.lexa.domain.model.WordCounts
 import app.lexa.ui.components.EmptyState
@@ -44,6 +45,10 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    LifecycleResumeEffect(viewModel) {
+        viewModel.refresh()
+        onPauseOrDispose { }
+    }
     HomeScreen(
         state = state,
         onOpenSettings = onOpenSettings,

@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import app.lexa.R
 import app.lexa.domain.leitner.LeitnerRules
 import app.lexa.domain.model.AnswerTotals
@@ -94,6 +95,10 @@ const val LEARNED_PREVIEW = 5
 @Composable
 fun StatsRoute(actions: StatsActions, viewModel: StatsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    LifecycleResumeEffect(viewModel) {
+        viewModel.refresh()
+        onPauseOrDispose { }
+    }
     StatsScreen(state, actions)
 }
 
