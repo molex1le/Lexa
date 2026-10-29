@@ -1,5 +1,7 @@
 package app.lexa.ui.share
 
+import androidx.compose.ui.text.font.FontWeight
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -82,11 +84,17 @@ fun TranslateSheetContent(content: SheetContent, actions: SheetActions, modifier
                     }
                     Spacer(Modifier.height(Spacing.s))
                 }
-                MarkerButton(
-                    stringResource(R.string.share_open_in_app),
-                    { actions.onOpenInApp(result.wordId) },
-                    Modifier.fillMaxWidth(),
-                )
+                // A text action, not a MarkerButton: the word above already carries the one marker.
+                TextButton(
+                    onClick = { actions.onOpenInApp(result.wordId) },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch),
+                ) {
+                    Text(
+                        stringResource(R.string.share_open_in_app),
+                        style = type.body.copy(fontWeight = FontWeight(600)),
+                        color = colors.ink,
+                    )
+                }
             }
         }
     }

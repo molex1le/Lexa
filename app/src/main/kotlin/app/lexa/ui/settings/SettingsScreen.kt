@@ -185,9 +185,10 @@ private fun ReminderSwitch(checked: Boolean, onToggle: (Boolean) -> Unit) {
             checked = checked,
             onCheckedChange = null,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = colors.onMarker,
-                checkedTrackColor = colors.marker,
-                checkedBorderColor = colors.marker,
+                // Ink, not marker: a switch is chrome, and the marker is kept for new words and the next action.
+                checkedThumbColor = colors.paper,
+                checkedTrackColor = colors.ink,
+                checkedBorderColor = colors.ink,
                 uncheckedThumbColor = colors.pencil,
                 uncheckedTrackColor = colors.sheet,
                 uncheckedBorderColor = colors.pencil,
