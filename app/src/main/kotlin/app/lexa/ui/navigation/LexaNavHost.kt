@@ -7,6 +7,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -76,11 +79,12 @@ fun LexaNavHost(
         onLaunchHandled()
     }
     val current = entry?.destination?.topLevel()
+    var wordsPulse by remember { mutableIntStateOf(0) }
     Scaffold(
         containerColor = LexaTheme.colors.paper,
         bottomBar = {
             if (current != null) {
-                LexaBottomBar(current = current, onSelect = navController::navigateTopLevel)
+                LexaBottomBar(current = current, onSelect = navController::navigateTopLevel, wordsPulse = wordsPulse)
             }
         },
     ) { padding ->
@@ -93,6 +97,7 @@ fun LexaNavHost(
                 HomeScreenRoute(
                     onOpenSettings = { navController.navigate(SettingsRoute) },
                     onTranslate = { navController.navigateTopLevel(TopLevel.TRANSLATOR) },
+                    onWordReturned = { wordsPulse++ },
                 )
             }
             composable<TranslatorRoute> {

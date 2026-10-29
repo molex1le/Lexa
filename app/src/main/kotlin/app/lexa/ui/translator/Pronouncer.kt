@@ -49,15 +49,26 @@ class Pronouncer @Inject constructor(@ApplicationContext private val context: Co
         pending = term
         if (engine == null) {
             tts = TextToSpeech(context) { status ->
-                ttsReady = status == TextToSpeech.SUCCESS
+                val engine = tts
+                ttsReady = status == TextToSpeech.SUCCESS && engine != null && engine.selectEnglish()
                 if (ttsReady) {
-                    tts?.language = Locale.US
-                    pending?.let { tts?.speak(it, TextToSpeech.QUEUE_FLUSH, null, it) }
+                    pending?.let { engine?.speak(it, TextToSpeech.QUEUE_FLUSH, null, it) }
+                } else {
+                    // Failed init or no English voice: drop the engine so the next tap tries again.
+                    engine?.shutdown()
+                    tts = null
                 }
                 pending = null
             }
         }
     }
+
+    /** en-US, else en-GB; false when the engine has neither voice installed. */
+    private fun TextToSpeech.selectEnglish(): Boolean =
+        listOf(Locale.US, Locale.UK).any { locale ->
+            val result = setLanguage(locale)
+            result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED
+        }
 
     fun release() {
         player?.release()

@@ -59,7 +59,8 @@ import kotlinx.coroutines.SupervisorJob
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class DefaultDispatcher
 
 private class SystemTimeProvider : TimeProvider {
-    override val clock: Clock = Clock.systemDefaultZone()
+    // Read on every access: a time-zone change on the device is picked up without a restart.
+    override val clock: Clock get() = Clock.systemDefaultZone()
 }
 
 @Module

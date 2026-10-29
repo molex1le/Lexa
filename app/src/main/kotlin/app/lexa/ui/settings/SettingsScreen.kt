@@ -252,7 +252,9 @@ private fun DirectionOption(@StringRes label: Int, selected: Boolean, onClick: (
         Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            // Keeps two-line labels (large system font) apart from the next option.
+            .padding(vertical = Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(

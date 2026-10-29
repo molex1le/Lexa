@@ -1,6 +1,11 @@
 package app.lexa.screenshots
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import app.lexa.ui.components.LocalReducedMotion
+import app.lexa.ui.home.Celebration
 import app.lexa.ui.history.HistoryScreen
 import app.lexa.ui.history.HistoryUiState
 import app.lexa.ui.home.HomeScreen
@@ -147,10 +152,23 @@ class ScreenshotTest(private val dark: Boolean) {
 
     private val suffix get() = if (dark) "dark" else "light"
 
-    private fun snap(name: String, content: @Composable () -> Unit) {
+    /** [fontScale] 1.3 is the large-font pass (phase 6): light theme only, files named *_font130_light.png. */
+    private fun snap(name: String, fontScale: Float = 1f, content: @Composable () -> Unit) {
         captureRoboImage("src/test/snapshots/${name}_$suffix.png") {
-            LexaTheme(darkTheme = dark) { content() }
+            val density = LocalDensity.current
+            CompositionLocalProvider(
+                // Every animated value is captured in its final state.
+                LocalReducedMotion provides true,
+                LocalDensity provides Density(density.density, fontScale),
+            ) {
+                LexaTheme(darkTheme = dark) { content() }
+            }
         }
+    }
+
+    private fun large(name: String, content: @Composable () -> Unit) {
+        assumeFalse(dark)
+        snap("${name}_font130", fontScale = 1.3f, content)
     }
 
     /** A top-level screen with the bottom bar under it, as it sits in the app. */
@@ -180,12 +198,40 @@ class ScreenshotTest(private val dark: Boolean) {
         example = SampleCommute.examples.first(),
     )
 
-    private fun trainingSnap(name: String, phase: TrainingPhase) = snap(name) {
+    @Composable
+    private fun Training(phase: TrainingPhase) {
         WithBar(TopLevel.TRAINING) { HomeScreen(HomeUiState(isLoading = false, session = phase), {}, {}, {}, it) }
     }
 
-    @Test fun trainingQuestion() =
-        trainingSnap("training_question", TrainingPhase.Question(commuteCard, position = 3, total = 12, answer = "ездить на раб"))
+    private fun trainingSnap(name: String, phase: TrainingPhase) = snap(name) { Training(phase) }
+
+    private val questionPhase = TrainingPhase.Question(commuteCard, position = 3, total = 12, answer = "ездить на раб")
+
+    @Test fun trainingQuestionLarge() = large("training_question") { Training(questionPhase) }
+
+    @Test fun trainingFeedbackWrongLarge() =
+        large("training_feedback_wrong") { Training(feedback(Verdict.WRONG, "путешествовать", boxAfter = 1)) }
+
+    /** A long term shrinks to fit one line instead of breaking mid-word. Light only. */
+    @Test fun trainingQuestionLong() {
+        assumeFalse(dark)
+        trainingSnap(
+            "training_question_long",
+            TrainingPhase.Question(
+                TrainingCardUi(prompt = "incomprehensibilities", ipa = "/ɪnˌkɒmprɪˌhɛnsəˈbɪlɪtiz/", box = 1, expectsEnglish = false),
+                position = 1,
+                total = 12,
+            ),
+        )
+    }
+
+    /** A word learned in this session: the one celebration line. */
+    @Test fun trainingFeedbackLearned() = trainingSnap(
+        "training_feedback_learned",
+        feedback(Verdict.CORRECT, "ездить на работу", boxAfter = 5).copy(learned = true, celebration = Celebration.Learned),
+    )
+
+    @Test fun trainingQuestion() = trainingSnap("training_question", questionPhase)
 
     @Test fun trainingFeedbackCorrect() =
         trainingSnap("training_feedback_correct", feedback(Verdict.CORRECT, "ездить на работу", boxAfter = 3))
@@ -199,7 +245,12 @@ class ScreenshotTest(private val dark: Boolean) {
         WithBar(TopLevel.TRANSLATOR) { TranslatorScreen(TranslatorUiState(), {}, {}, {}, it) }
     }
 
-    @Test fun translatorResult() = snap("translator_result") {
+    @Test fun translatorResult() = snap("translator_result") { TranslatorResultScreen() }
+
+    @Test fun translatorResultLarge() = large("translator_result") { TranslatorResultScreen() }
+
+    @Composable
+    private fun TranslatorResultScreen() {
         WithBar(TopLevel.TRANSLATOR) {
             TranslatorScreen(
                 TranslatorUiState(
@@ -244,6 +295,10 @@ class ScreenshotTest(private val dark: Boolean) {
         SettingsScreen(SettingsUiState(), onBack = {}, onDirectionChange = {})
     }
 
+    @Test fun settingsLarge() = large("settings") {
+        SettingsScreen(SettingsUiState(reminderEnabled = true), onBack = {}, onDirectionChange = {})
+    }
+
     @Test fun settingsReminderOn() = snap("settings_reminder") {
         SettingsScreen(SettingsUiState(reminderEnabled = true), onBack = {}, onDirectionChange = {})
     }
@@ -285,6 +340,10 @@ class ScreenshotTest(private val dark: Boolean) {
         WithBar(TopLevel.WORDS) { ListsScreen(SampleLists, modifier = it) }
     }
 
+    @Test fun wordsNewDataLarge() = large("words_new_data") {
+        WithBar(TopLevel.WORDS) { ListsScreen(SampleLists, modifier = it) }
+    }
+
     @Test fun wordsLearnedData() = snap("words_learned_data") {
         WithBar(TopLevel.WORDS) { ListsScreen(SampleLists.copy(tab = ListTab.LEARNED), modifier = it) }
     }
@@ -299,7 +358,12 @@ class ScreenshotTest(private val dark: Boolean) {
 
     @Test fun wordCard() = wordCard("word_card")
 
-    private fun wordCard(name: String) = snap(name) {
+    @Test fun wordCardLarge() = large("word_card") { WordCardScreen() }
+
+    private fun wordCard(name: String) = snap(name) { WordCardScreen() }
+
+    @Composable
+    private fun WordCardScreen() {
         WordScreen(
             WordUiState(
                 isLoading = false,
@@ -313,6 +377,10 @@ class ScreenshotTest(private val dark: Boolean) {
     }
 
     @Test fun statsData() = snap("stats_data") {
+        WithBar(TopLevel.STATS) { StatsScreen(SampleStats, modifier = it) }
+    }
+
+    @Test fun statsDataLarge() = large("stats_data") {
         WithBar(TopLevel.STATS) { StatsScreen(SampleStats, modifier = it) }
     }
 

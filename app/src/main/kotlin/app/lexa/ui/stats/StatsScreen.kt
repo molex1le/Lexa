@@ -24,6 +24,22 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
+import app.lexa.ui.components.rememberReducedMotion
+import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -37,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import app.lexa.R
 import app.lexa.domain.leitner.LeitnerRules
 import app.lexa.domain.model.AnswerTotals
@@ -78,6 +95,10 @@ const val LEARNED_PREVIEW = 5
 @Composable
 fun StatsRoute(actions: StatsActions, viewModel: StatsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    LifecycleResumeEffect(viewModel) {
+        viewModel.refresh()
+        onPauseOrDispose { }
+    }
     StatsScreen(state, actions)
 }
 
@@ -87,6 +108,36 @@ fun StatsRoute(actions: StatsActions, viewModel: StatsViewModel = hiltViewModel(
  */
 @Composable
 fun StatsScreen(state: StatsUiState, actions: StatsActions = StatsActions(), modifier: Modifier = Modifier) {
+    val colors = LexaTheme.colors
+    val type = LexaTheme.type
+    // Figures count up and bars grow once, the first time this screen shows data; coming back to the tab
+    // (state saved by navigation) or a later data change shows the numbers as they are.
+    val reduced = rememberReducedMotion()
+    var shown by rememberSaveable { mutableStateOf(false) }
+    val animateIn = remember { !shown && !reduced }
+    LaunchedEffect(state) { if (state != StatsUiState()) shown = true }
+    CompositionLocalProvider(LocalAnimateIn provides animateIn) {
+        StatsColumn(state, actions, modifier)
+    }
+}
+
+/** Whether figures and bars on this screen animate in from zero. */
+private val LocalAnimateIn = staticCompositionLocalOf { false }
+
+/** [value] as shown: counting up from 0 over ~400 ms when the screen animates in, else as it is. */
+@Composable
+private fun countUp(value: Int): Int {
+    val animate = LocalAnimateIn.current
+    val shown = remember { Animatable(if (animate) 0f else value.toFloat()) }
+    LaunchedEffect(value) {
+        if (animate && value > 0) shown.animateTo(value.toFloat(), tween(durationMillis = 400, easing = FastOutSlowInEasing))
+        else shown.snapTo(value.toFloat())
+    }
+    return shown.value.roundToInt()
+}
+
+@Composable
+private fun StatsColumn(state: StatsUiState, actions: StatsActions, modifier: Modifier) {
     val colors = LexaTheme.colors
     val type = LexaTheme.type
     Column(
@@ -99,9 +150,9 @@ fun StatsScreen(state: StatsUiState, actions: StatsActions = StatsActions(), mod
         Column(Modifier.padding(horizontal = Spacing.gutter)) {
             Spacer(Modifier.height(Spacing.l))
             Row(Modifier.fillMaxWidth()) {
-                Figure(state.counts.learned.toString(), stringResource(R.string.stats_learned), Modifier.weight(1f))
-                Figure(state.counts.learning.toString(), stringResource(R.string.stats_learning), Modifier.weight(1f))
-                Figure(state.counts.new.toString(), stringResource(R.string.stats_new), Modifier.weight(1f))
+                Figure(countUp(state.counts.learned).toString(), stringResource(R.string.stats_learned), Modifier.weight(1f))
+                Figure(countUp(state.counts.learning).toString(), stringResource(R.string.stats_learning), Modifier.weight(1f))
+                Figure(countUp(state.counts.new).toString(), stringResource(R.string.stats_new), Modifier.weight(1f))
             }
 
             Block(stringResource(R.string.stats_by_day_title)) {
@@ -129,7 +180,7 @@ fun StatsScreen(state: StatsUiState, actions: StatsActions = StatsActions(), mod
 
             Block(stringResource(R.string.stats_streak_title)) {
                 Figure(
-                    value = state.streak.toString(),
+                    value = countUp(state.streak).toString(),
                     caption = pluralStringResource(R.plurals.days_in_row, state.streak),
                 )
                 Spacer(Modifier.height(Spacing.s))
@@ -254,7 +305,7 @@ private fun AccuracyFigure(totals: AnswerTotals, period: String, modifier: Modif
     val caption = "$period · " + pluralStringResource(R.plurals.answers, totals.answers, totals.answers)
     Column(modifier) {
         Text(
-            text = percent?.let { stringResource(R.string.stats_accuracy_percent, it) }
+            text = percent?.let { stringResource(R.string.stats_accuracy_percent, countUp(it)) }
                 ?: stringResource(R.string.stats_accuracy_undefined),
             style = LexaTheme.type.figure,
             color = if (percent == null) LexaTheme.colors.pencil else LexaTheme.colors.ink,
@@ -268,12 +319,25 @@ private fun AccuracyFigure(totals: AnswerTotals, period: String, modifier: Modif
  * is drawn even with no data. Today's bar is the one place the marker appears on this screen.
  */
 private const val ChartFloor = 4
+private const val BarStaggerMillis = 45L
 
 @Composable
 private fun DailyBars(values: List<Int>) {
     val colors = LexaTheme.colors
     val total = values.sum()
-    val description = stringResource(R.string.stats_chart_description, total.toString())
+    val description = stringResource(R.string.stats_chart_description, total.toString(), values.lastOrNull()?.toString() ?: "0")
+    // Bars grow one after another, 45 ms apart, the first time data arrives.
+    val animate = LocalAnimateIn.current
+    val growth = remember(values.size) { List(values.size) { Animatable(if (animate) 0f else 1f) } }
+    LaunchedEffect(total > 0) {
+        if (total == 0) return@LaunchedEffect
+        growth.forEachIndexed { index, bar ->
+            launch {
+                delay(index * BarStaggerMillis)
+                bar.animateTo(1f, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow))
+            }
+        }
+    }
     Canvas(
         Modifier
             .fillMaxWidth()
@@ -297,7 +361,7 @@ private fun DailyBars(values: List<Int>) {
             strokeWidth = 1.dp.toPx())
         values.forEachIndexed { index, value ->
             val isToday = index == values.lastIndex
-            val h = if (max == 0 || value == 0) stub else size.height * value / max
+            val h = if (max == 0 || value == 0) stub else stub + (size.height * value / max - stub) * growth[index].value
             val color = when {
                 isToday -> colors.marker
                 value == 0 -> colors.pencil.copy(alpha = 0.3f)
