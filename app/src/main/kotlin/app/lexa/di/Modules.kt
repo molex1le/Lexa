@@ -18,6 +18,8 @@ import app.lexa.data.dictionary.MlKitMachineTranslator
 import app.lexa.data.dictionary.TatoebaSource
 import app.lexa.data.repository.RoomHistoryRepository
 import app.lexa.data.repository.RoomTranslatedWordRepository
+import app.lexa.data.repository.RoomTrainingRepository
+import app.lexa.domain.training.TrainingRepository
 import app.lexa.domain.repository.DictionaryRepository
 import app.lexa.domain.repository.DictionarySource
 import app.lexa.domain.repository.ExampleSentenceSource
@@ -104,6 +106,7 @@ abstract class RepositoryModule {
     @Binds abstract fun historyRepository(impl: RoomHistoryRepository): HistoryRepository
     @Binds abstract fun settingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
     @Binds abstract fun translatedWordRepository(impl: RoomTranslatedWordRepository): TranslatedWordRepository
+    @Binds abstract fun trainingRepository(impl: RoomTrainingRepository): TrainingRepository
 }
 
 /** Translator sources (ADR-0001). Swap a source by binding another implementation here. */

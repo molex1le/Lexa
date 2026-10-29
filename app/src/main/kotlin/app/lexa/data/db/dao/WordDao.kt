@@ -38,6 +38,9 @@ interface WordDao {
     @Query("SELECT * FROM words WHERE deletedAt IS NULL AND learnedAt IS NOT NULL ORDER BY learnedAt DESC")
     fun observeLearned(): Flow<List<WordEntity>>
 
+    @Query("SELECT * FROM words WHERE id = :id")
+    suspend fun find(id: Long): WordEntity?
+
     @Query("SELECT * FROM words WHERE id = :id AND deletedAt IS NULL")
     fun observeById(id: Long): Flow<WordEntity?>
 
@@ -57,4 +60,31 @@ interface WordDao {
 
     @Query("SELECT box, COUNT(*) AS n FROM words WHERE deletedAt IS NULL AND learnedAt IS NULL GROUP BY box")
     fun observeBoxCounts(): Flow<List<BoxCountRow>>
+
+    /** The training queue (ARCHITECTURE §9): new words first, oldest added first. */
+    @Query(
+        """
+        SELECT * FROM words WHERE deletedAt IS NULL AND learnedAt IS NULL AND nextReviewAt <= :now
+        ORDER BY box ASC, addedAt ASC, id ASC LIMIT :limit
+        """,
+    )
+    suspend fun due(now: Long, limit: Int): List<WordEntity>
+
+    /** Words in learning with mistakes, most mistakes first: practice outside the schedule. */
+    @Query(
+        """
+        SELECT * FROM words WHERE deletedAt IS NULL AND learnedAt IS NULL AND mistakesCount > 0
+        ORDER BY mistakesCount DESC, addedAt ASC LIMIT :limit
+        """,
+    )
+    suspend fun hardest(limit: Int): List<WordEntity>
+
+    @Query(
+        """
+        UPDATE words SET box = :box, nextReviewAt = :nextReviewAt, mistakesCount = :mistakesCount,
+          learnedAt = :learnedAt, lastReviewedAt = :reviewedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateSchedule(id: Long, box: Int, nextReviewAt: Long, mistakesCount: Int, learnedAt: Long?, reviewedAt: Long)
 }

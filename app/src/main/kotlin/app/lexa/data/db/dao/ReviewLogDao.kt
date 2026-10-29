@@ -15,4 +15,11 @@ interface ReviewLogDao {
 
     @Query("SELECT COUNT(*) AS answers, COALESCE(SUM(isCorrect), 0) AS correct FROM review_log")
     fun observeTotals(): Flow<AnswerTotalsRow>
+
+    /** «Я знал, это опечатка»: the same row is re-scored, no second row (ARCHITECTURE §9). */
+    @Query("UPDATE review_log SET outcome = 'OVERRIDDEN', isCorrect = 1, toBox = :toBox WHERE id = :id")
+    suspend fun markOverridden(id: Long, toBox: Int)
+
+    @Query("SELECT * FROM review_log ORDER BY id")
+    suspend fun all(): List<ReviewLogEntity>
 }
