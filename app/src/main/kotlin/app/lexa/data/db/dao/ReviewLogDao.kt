@@ -16,6 +16,13 @@ interface ReviewLogDao {
     @Query("SELECT COUNT(*) AS answers, COALESCE(SUM(isCorrect), 0) AS correct FROM review_log")
     fun observeTotals(): Flow<AnswerTotalsRow>
 
+    @Query("SELECT COUNT(*) AS answers, COALESCE(SUM(isCorrect), 0) AS correct FROM review_log WHERE localDay >= :fromDay")
+    fun observeTotalsSince(fromDay: Long): Flow<AnswerTotalsRow>
+
+    /** Days with at least one answer: the input of the streak calculator. */
+    @Query("SELECT DISTINCT localDay FROM review_log")
+    fun observePracticeDays(): Flow<List<Long>>
+
     /** «Я знал, это опечатка»: the same row is re-scored, no second row (ARCHITECTURE §9). */
     @Query("UPDATE review_log SET outcome = 'OVERRIDDEN', isCorrect = 1, toBox = :toBox WHERE id = :id")
     suspend fun markOverridden(id: Long, toBox: Int)

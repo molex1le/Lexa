@@ -11,6 +11,8 @@ data class WordCountsRow(val learned: Int, val learning: Int, val new: Int)
 
 data class BoxCountRow(val box: Int, val n: Int)
 
+data class LearnedPeriodsRow(val today: Int, val week: Int, val month: Int)
+
 @Dao
 interface WordDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
@@ -87,4 +89,39 @@ interface WordDao {
         """,
     )
     suspend fun updateSchedule(id: Long, box: Int, nextReviewAt: Long, mistakesCount: Int, learnedAt: Long?, reviewedAt: Long)
+
+    @Query("UPDATE words SET deletedAt = :now WHERE id = :id")
+    suspend fun softDelete(id: Long, now: Long)
+
+    @Query("DELETE FROM words WHERE id = :id AND deletedAt IS NOT NULL")
+    suspend fun purge(id: Long)
+
+    @Query("DELETE FROM words WHERE deletedAt IS NOT NULL AND deletedAt < :before")
+    suspend fun purgeDeletedBefore(before: Long)
+
+    @Query("UPDATE words SET box = 1, learnedAt = NULL, nextReviewAt = :dueAt WHERE id = :id")
+    suspend fun returnToLearning(id: Long, dueAt: Long)
+
+    @Query(
+        """
+        SELECT
+          COALESCE(SUM(learnedAt >= :todayStart), 0) AS today,
+          COALESCE(SUM(learnedAt >= :weekStart), 0)  AS week,
+          COALESCE(SUM(learnedAt >= :monthStart), 0) AS month
+        FROM words WHERE deletedAt IS NULL AND learnedAt IS NOT NULL
+        """,
+    )
+    fun observeLearnedPeriods(todayStart: Long, weekStart: Long, monthStart: Long): Flow<LearnedPeriodsRow>
+
+    /** learnedAt of words learned since [from]; grouped into local days in Kotlin (exact across DST). */
+    @Query("SELECT learnedAt FROM words WHERE deletedAt IS NULL AND learnedAt >= :from")
+    fun observeLearnedSince(from: Long): Flow<List<Long>>
+
+    @Query(
+        """
+        SELECT * FROM words WHERE deletedAt IS NULL AND learnedAt IS NULL AND mistakesCount > 0
+        ORDER BY mistakesCount DESC, addedAt ASC LIMIT :limit
+        """,
+    )
+    fun observeHardest(limit: Int): Flow<List<WordEntity>>
 }

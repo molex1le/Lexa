@@ -31,10 +31,12 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
 import kotlinx.serialization.json.Json
 import app.lexa.data.repository.RoomReviewRepository
+import app.lexa.data.repository.RoomStatsRepository
 import app.lexa.data.repository.RoomWordRepository
 import app.lexa.data.settings.DataStoreSettingsRepository
 import app.lexa.domain.repository.HistoryRepository
 import app.lexa.domain.repository.ReviewRepository
+import app.lexa.domain.repository.StatsRepository
 import app.lexa.domain.repository.SettingsRepository
 import app.lexa.domain.repository.WordRepository
 import app.lexa.domain.time.TimeProvider
@@ -103,6 +105,7 @@ object SettingsModule {
 abstract class RepositoryModule {
     @Binds abstract fun wordRepository(impl: RoomWordRepository): WordRepository
     @Binds abstract fun reviewRepository(impl: RoomReviewRepository): ReviewRepository
+    @Binds abstract fun statsRepository(impl: RoomStatsRepository): StatsRepository
     @Binds abstract fun historyRepository(impl: RoomHistoryRepository): HistoryRepository
     @Binds abstract fun settingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
     @Binds abstract fun translatedWordRepository(impl: RoomTranslatedWordRepository): TranslatedWordRepository

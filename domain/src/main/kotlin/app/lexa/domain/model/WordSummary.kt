@@ -10,4 +10,8 @@ data class WordSummary(
     val mistakesCount: Int,
     val addedAt: Long,
     val learnedAt: Long?,
-)
+    val lastReviewedAt: Long? = null,
+) {
+    /** Box 1 and never answered: the word wears the marker in lists. */
+    val isFresh: Boolean get() = learnedAt == null && box == 1 && lastReviewedAt == null
+}

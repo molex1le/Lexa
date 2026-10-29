@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import app.lexa.domain.model.Direction
 import app.lexa.domain.model.Settings
+import app.lexa.domain.model.WordSort
 import app.lexa.domain.repository.SettingsRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -25,6 +26,9 @@ class DataStoreSettingsRepository @Inject constructor(
                 ?: Direction.EN_RU,
             reminderMinutes = prefs[Keys.reminderTime] ?: Settings.DEFAULT_REMINDER_MINUTES,
             reminderEnabled = prefs[Keys.reminderEnabled] ?: false,
+            wordSort = prefs[Keys.wordSort]
+                ?.let { name -> WordSort.entries.firstOrNull { it.name == name } }
+                ?: WordSort.ADDED,
         )
     }
 
@@ -36,9 +40,14 @@ class DataStoreSettingsRepository @Inject constructor(
         store.edit { it[Keys.reminderTime] = minutes.coerceIn(0, 24 * 60 - 1) }
     }
 
+    override suspend fun setWordSort(sort: WordSort) {
+        store.edit { it[Keys.wordSort] = sort.name }
+    }
+
     private object Keys {
         val direction = stringPreferencesKey("direction")
         val reminderTime = intPreferencesKey("reminderTime")
         val reminderEnabled = booleanPreferencesKey("reminderEnabled")
+        val wordSort = stringPreferencesKey("wordSort")
     }
 }
