@@ -88,8 +88,7 @@
     <string name="translator_title">Перевод</string>
     <string name="translator_hint">Слово или короткая фраза</string>
     <string name="translator_input_label">Слово для перевода</string>
-    <string name="translator_action">Перевести</string>
-    <string name="translator_empty">Вставь незнакомое слово&#160;– Lexa покажет перевод, транскрипцию и примеры и сразу добавит его в «Новые слова». Можно и по-русски: найдётся английское слово</string>
+    <string name="translator_empty">Напиши или вставь слово&#160;– перевод появится сам: транскрипция, примеры, и слово сразу попадёт в «Новые слова». Можно и по-русски: найдётся английское слово</string>
     <string name="translator_recent">Недавние</string>
     <string name="translator_loading">Ищу перевод…</string>
     <string name="translator_downloading_model">Скачиваю русскую модель перевода, около 30&#160;МБ. Это нужно один раз&#160;– потом перевод работает без интернета</string>

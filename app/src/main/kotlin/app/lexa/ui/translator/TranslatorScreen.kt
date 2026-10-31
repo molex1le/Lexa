@@ -63,7 +63,6 @@ import app.lexa.domain.model.PartOfSpeech
 import app.lexa.domain.model.Translation
 import app.lexa.domain.repository.LookupError
 import app.lexa.ui.components.LexaIconButton
-import app.lexa.ui.components.MarkerButton
 import app.lexa.ui.components.ScreenHeader
 import app.lexa.ui.components.markedTextColor
 import app.lexa.ui.components.markerHighlight
@@ -91,12 +90,7 @@ data class TranslatorUiState(
     val phase: TranslatorPhase = TranslatorPhase.Idle,
     /** Set once per fresh add: the screen shows «Добавлено в новые слова» with «Отменить». */
     val snackbarWordId: Long? = null,
-) {
-    val canTranslate: Boolean
-        get() = query.isNotBlank() &&
-            phase !is TranslatorPhase.Loading &&
-            !(phase is TranslatorPhase.Result && phase.query == query.trim())
-}
+)
 
 @Composable
 fun TranslatorRoute(
@@ -117,7 +111,7 @@ fun TranslatorRoute(
     )
 }
 
-/** «Перевод» tab: input on a sheet, one marker action, then the result, an error or recent queries. */
+/** «Перевод» tab: input on a sheet; typing translates by itself, then the result, an error or recent queries. */
 @Composable
 fun TranslatorScreen(
     state: TranslatorUiState,
@@ -160,13 +154,6 @@ fun TranslatorScreen(
             ) {
                 Spacer(Modifier.height(Spacing.l))
                 QueryInput(state, onQueryChange, onTranslate)
-                Spacer(Modifier.height(Spacing.m))
-                MarkerButton(
-                    text = stringResource(R.string.translator_action),
-                    onClick = onTranslate,
-                    enabled = state.canTranslate,
-                    modifier = Modifier.fillMaxWidth(),
-                )
                 Spacer(Modifier.height(Spacing.l))
                 when (val phase = state.phase) {
                     TranslatorPhase.Idle -> Recent(state.recent, onTranslateQuery)
@@ -213,7 +200,7 @@ private fun QueryInput(state: TranslatorUiState, onQueryChange: (String) -> Unit
             autoCorrectEnabled = false,
             imeAction = ImeAction.Search,
         ),
-        keyboardActions = KeyboardActions(onSearch = { if (state.canTranslate) onTranslate() }),
+        keyboardActions = KeyboardActions(onSearch = { if (state.query.isNotBlank()) onTranslate() }),
         modifier = Modifier
             .fillMaxWidth()
             .semantics { contentDescription = inputLabel },

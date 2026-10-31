@@ -13,6 +13,8 @@ import app.lexa.ui.navigation.TranslatorRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlin.math.abs
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +34,14 @@ class TranslatorViewModel @Inject constructor(
 
     private val local = MutableStateFlow(TranslatorUiState())
     private var lookupJob: Job? = null
+
+    /** The wait after the last keystroke; a paste or a long jump in the text translates at once. */
+    private var autoJob: Job? = null
+
+    /** The word an automatic lookup added to «Новые», until the learner types on past it. */
+    private var autoAdded: AutoAdded? = null
+
+    private data class AutoAdded(val wordId: Long, val query: String)
 
     val state: StateFlow<TranslatorUiState> = combine(local, history.observeHistory()) { s, items ->
         s.copy(recent = items.distinctBy { it.query.lowercase() }.take(RECENT_LIMIT))
@@ -53,11 +63,52 @@ class TranslatorViewModel @Inject constructor(
         }
     }
 
-    fun onQueryChange(value: String) = local.update { it.copy(query = value) }
+    /**
+     * Typing translates by itself: [AUTO_DELAY_MS] after the last keystroke, at once after a paste
+     * (more than one character changed). A word added on the way to a longer one («car» on the way to
+     * «carpet») is taken out of «Новые» again.
+     */
+    fun onQueryChange(value: String) {
+        val previous = local.value.query
+        local.update { it.copy(query = value) }
+        autoJob?.cancel()
+        val text = value.trim()
+        if (text.isEmpty()) {
+            lookupJob?.cancel()
+            local.update { it.copy(phase = TranslatorPhase.Idle) }
+            return
+        }
+        dropWordOnTheWay(text)
+        val current = local.value.phase
+        if (current is TranslatorPhase.Result && current.query == text) return
+        val pasted = abs(value.length - previous.length) > 1
+        autoJob = viewModelScope.launch {
+            if (!pasted) delay(AUTO_DELAY_MS)
+            lookup(value, auto = true)
+        }
+    }
 
+    /** The keyboard's «search» key: no waiting. */
     fun onTranslate() = translate(local.value.query)
 
     fun translate(query: String) {
+        autoJob?.cancel()
+        lookup(query, auto = false)
+    }
+
+    private fun dropWordOnTheWay(text: String) {
+        val added = autoAdded ?: return
+        if (text.length > added.query.length && text.lowercase().startsWith(added.query)) {
+            autoAdded = null
+            viewModelScope.launch { words.undoAdd(added.wordId) }
+            val phase = local.value.phase
+            if (phase is TranslatorPhase.Result && phase.wordId == added.wordId) {
+                local.update { it.copy(phase = phase.copy(wordId = null, justAdded = false, isFavorite = false), snackbarWordId = null) }
+            }
+        }
+    }
+
+    private fun lookup(query: String, auto: Boolean) {
         if (query.isBlank()) return
         lookupJob?.cancel()
         local.update { it.copy(query = query, phase = TranslatorPhase.Loading(downloadingModel = false)) }
@@ -72,6 +123,7 @@ class TranslatorViewModel @Inject constructor(
                 is LookupResult.Found -> {
                     val added = words.addFromTranslation(result.translation)
                     history.record(query, added.wordId)
+                    autoAdded = if (auto && added.isNew) AutoAdded(added.wordId, query.trim().lowercase()) else null
                     local.update {
                         it.copy(
                             phase = TranslatorPhase.Result(
@@ -95,6 +147,7 @@ class TranslatorViewModel @Inject constructor(
     fun onUndoAdd(wordId: Long) {
         val result = local.value.phase as? TranslatorPhase.Result ?: return
         if (!result.justAdded || result.wordId != wordId) return
+        if (autoAdded?.wordId == wordId) autoAdded = null
         viewModelScope.launch {
             words.undoAdd(wordId)
             local.update { it.copy(phase = result.copy(wordId = null, justAdded = false, isFavorite = false)) }
@@ -121,5 +174,8 @@ class TranslatorViewModel @Inject constructor(
     companion object {
         const val PICKED_QUERY = "picked_query"
         private const val RECENT_LIMIT = 5
+
+        /** How long typing must pause before the word is translated (and added to «Новые»). */
+        const val AUTO_DELAY_MS = 1_200L
     }
 }
