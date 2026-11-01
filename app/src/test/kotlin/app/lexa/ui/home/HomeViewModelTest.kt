@@ -50,6 +50,7 @@ private object FixedSettings : SettingsRepository {
     override suspend fun setVocabLevel(level: app.lexa.domain.model.VocabLevel) = Unit
     override suspend fun setSessionSize(size: Int) = Unit
     override suspend fun setDailyGoal(goal: Int) = Unit
+    override suspend fun update(transform: (Settings) -> Settings) = Unit
 }
 
 private class FakeProgress : app.lexa.domain.training.DailyProgressRepository {

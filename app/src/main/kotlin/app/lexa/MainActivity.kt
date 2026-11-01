@@ -2,16 +2,19 @@ package app.lexa
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.mutableStateOf
 import app.lexa.ui.navigation.LaunchTarget
 import app.lexa.ui.navigation.LexaNavHost
-import app.lexa.ui.theme.LexaTheme
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.lexa.ui.theme.AppearanceViewModel
+import app.lexa.ui.theme.LexaAppTheme
+import app.lexa.ui.theme.applySystemBars
 import app.lexa.update.UpdatePrompt
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -21,15 +24,13 @@ class MainActivity : ComponentActivity() {
     private val launchTarget = mutableStateOf<LaunchTarget?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Transparent system bars: the paper of the screen shows through edge to edge.
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
-        )
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) launchTarget.value = intent.launchTarget()
         setContent {
-            LexaTheme {
+            val settings by hiltViewModel<AppearanceViewModel>().settings.collectAsStateWithLifecycle()
+            // Transparent system bars: the paper of the screen shows through edge to edge.
+            LaunchedEffect(settings.themeMode) { applySystemBars(settings.themeMode) }
+            LexaAppTheme(settings) {
                 LexaNavHost(launchTarget = launchTarget.value, onLaunchHandled = { launchTarget.value = null })
                 UpdatePrompt()
             }

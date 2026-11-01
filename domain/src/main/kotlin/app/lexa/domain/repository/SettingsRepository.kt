@@ -15,4 +15,7 @@ interface SettingsRepository {
     suspend fun setVocabLevel(level: VocabLevel)
     suspend fun setSessionSize(size: Int)
     suspend fun setDailyGoal(goal: Int)
+
+    /** Changes any number of settings in one write: the screens use this for the newer options. */
+    suspend fun update(transform: (Settings) -> Settings)
 }

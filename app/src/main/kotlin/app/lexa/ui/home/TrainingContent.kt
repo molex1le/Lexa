@@ -144,6 +144,7 @@ class TrainingActions(
     val onFinish: () -> Unit = {},
     /** A wrong answer sent the word back to «Новые»: the «Слова» tab pulses once. */
     val onWordReturned: () -> Unit = {},
+    val haptics: Boolean = true,
     val onHint: () -> Unit = {},
     val onDontKnow: () -> Unit = {},
     val onPronounce: () -> Unit = {},
@@ -306,7 +307,7 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
     LaunchedEffect(phase.position, phase.verdict) {
         if (played == phase.verdict) return@LaunchedEffect
         played = phase.verdict
-        haptics.performHapticFeedback(if (correct) HapticFeedbackType.Confirm else HapticFeedbackType.Reject)
+        if (actions.haptics) haptics.performHapticFeedback(if (correct) HapticFeedbackType.Confirm else HapticFeedbackType.Reject)
         flip.animateTo(180f, spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMedium))
         val box = phase.boxAfter.toFloat()
         if (reduced) markerAt.snapTo(box)

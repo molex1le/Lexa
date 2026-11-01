@@ -11,6 +11,9 @@ interface HistoryDao {
     @Insert
     suspend fun insert(entry: TranslationHistoryEntity): Long
 
+    @Query("DELETE FROM translation_history")
+    suspend fun clear()
+
     @Query("SELECT * FROM translation_history ORDER BY translatedAt DESC LIMIT :limit")
     fun observeRecent(limit: Int = 200): Flow<List<TranslationHistoryEntity>>
 }

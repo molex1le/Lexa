@@ -21,6 +21,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.lexa.R
+import app.lexa.domain.repository.SettingsRepository
+import kotlinx.coroutines.flow.first
 import app.lexa.ui.theme.LexaTheme
 import app.lexa.ui.theme.Spacing
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -35,16 +37,40 @@ data class UpdateUiState(
     /** 0..1 while the APK downloads; null otherwise. */
     val progress: Float? = null,
     val failed: Boolean = false,
+    /** A check asked for in the settings is running. */
+    val checking: Boolean = false,
+    /** The last check found nothing newer than the installed version. */
+    val upToDate: Boolean = false,
 )
 
-/** Checks GitHub once per launch; the dialog shows only when a newer version exists. */
+/**
+ * Checks GitHub once per launch (unless the learner turned that off); the dialog shows only when a newer
+ * version exists. The settings screen shares this view model through the activity and can ask for a check.
+ */
 @HiltViewModel
-class UpdateViewModel @Inject constructor(private val updater: AppUpdater) : ViewModel() {
+class UpdateViewModel @Inject constructor(
+    private val updater: AppUpdater,
+    private val settings: SettingsRepository,
+) : ViewModel() {
     private val _state = MutableStateFlow(UpdateUiState())
     val state: StateFlow<UpdateUiState> = _state
 
+    val installedVersion: String get() = updater.installedVersion
+
     init {
-        viewModelScope.launch { updater.newerRelease()?.let { r -> _state.update { it.copy(release = r) } } }
+        viewModelScope.launch {
+            if (settings.settings.first().updateCheck) updater.newerRelease()?.let { r -> _state.update { it.copy(release = r) } }
+        }
+    }
+
+    /** «Проверить обновления» in the settings: always asks GitHub, whatever the automatic check is set to. */
+    fun checkNow() {
+        if (_state.value.checking) return
+        _state.update { it.copy(checking = true, upToDate = false) }
+        viewModelScope.launch {
+            val release = updater.newerRelease()
+            _state.update { it.copy(checking = false, release = release ?: it.release, upToDate = release == null) }
+        }
     }
 
     fun update() {

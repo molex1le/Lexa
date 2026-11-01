@@ -91,6 +91,7 @@ class HomeViewModel @Inject constructor(
             level = s.vocabLevel,
             placement = test,
             daily = daily,
+            haptics = s.haptics,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
@@ -164,7 +165,7 @@ class HomeViewModel @Inject constructor(
                 bestStreakAtStart = stats.observeStreak(time.today()).first().best
                 val direction = settings.settings.first().direction
                 val prefs = settings.settings.first()
-                cards = training.build(practice, prefs.vocabLevel, prefs.sessionSize).toMutableList()
+                cards = training.build(practice, prefs.vocabLevel, prefs.sessionSize, prefs.newWordsPerDay).toMutableList()
                 directions = cards.map {
                     when (direction) {
                         Direction.EN_RU -> CardDirection.EN_RU
@@ -247,6 +248,7 @@ class HomeViewModel @Inject constructor(
                 if (verdict == Verdict.WRONG || verdict == Verdict.GAVE_UP) queueRetry(card, direction, result, round = 1)
                 // A result only lands on the card it was computed for.
                 if (session.value !== phase) return@launch
+                speakIfAsked(card)
                 session.value = TrainingPhase.Feedback(
                     card = phase.card,
                     position = phase.position,
@@ -299,6 +301,7 @@ class HomeViewModel @Inject constructor(
         val again = (verdict == Verdict.WRONG || verdict == Verdict.GAVE_UP) && round < TrainingSession.MAX_RETRIES
         if (again && first != null) queueRetry(card, direction, first, round + 1)
         if (session.value !== phase) return
+        speakIfAsked(card)
         session.value = TrainingPhase.Feedback(
             card = phase.card,
             position = phase.position,
@@ -374,6 +377,11 @@ class HomeViewModel @Inject constructor(
             java.time.Instant.ofEpochMilli(state.nextReviewAt).atZone(time.zone).toLocalDate(),
         )
         return days.toInt().coerceAtLeast(0)
+    }
+
+    /** «Озвучивать слово после ответа» in the settings. */
+    private suspend fun speakIfAsked(card: TrainingCard) {
+        if (settings.settings.first().autoPronounce) pronouncer.play(card.term, card.audioUrl)
     }
 
     fun pronounce() {

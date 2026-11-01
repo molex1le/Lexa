@@ -28,7 +28,7 @@ class ReviewReminderWorker @AssistedInject constructor(
         if (!current.reminderEnabled) return Result.success()
         val due = words.observeDueCount(time.nowMillis()).first()
         if (due > 0) notifier.show(due)
-        scheduler.schedule(current.reminderMinutes)
+        scheduler.schedule(current.reminderMinutes, current.reminderDays)
         return Result.success()
     }
 }

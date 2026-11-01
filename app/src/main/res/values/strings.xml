@@ -265,4 +265,52 @@
     <string name="widget_title">Повторить сегодня</string>
     <string name="widget_description">Сколько слов ждут повторения и сколько карточек осталось до цели на день</string>
     <string name="widget_description_a11y">На повторение %1$d. %2$s</string>
+    <string name="settings_group_appearance">Внешний вид</string>
+    <string name="settings_theme_title">Тема</string>
+    <string name="theme_system">Системная</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
+    <string name="settings_word_font_title">Шрифт слов</string>
+    <string name="settings_ui_font_title">Шрифт интерфейса</string>
+    <string name="font_system">Системный</string>
+    <string name="font_preview_word">thoughtful</string>
+    <string name="font_preview_ipa">/ˈθɔːtfəl/</string>
+    <string name="font_preview_translation">вдумчивый</string>
+    <string name="settings_text_size_title">Размер текста</string>
+    <string name="text_size_percent">%1$d&#160;%%</string>
+    <string name="settings_text_size_hint">Поверх размера шрифта в настройках телефона</string>
+    <string name="settings_group_training">Тренировка</string>
+    <string name="direction_en_ru_short">EN → RU</string>
+    <string name="direction_ru_en_short">RU → EN</string>
+    <string name="settings_new_title">Новых слов в день</string>
+    <string name="settings_new_custom">Своё число (0–100)</string>
+    <string name="new_words_none">Нет</string>
+    <string name="settings_new_hint">Сколько новых слов из набора берётся за день: повторение плюс не больше этого числа новых. Слова, которые знаешь, не считаются. «Нет»&#160;– только повторение</string>
+    <string name="settings_auto_sound">Озвучивать слово после ответа</string>
+    <string name="settings_haptics">Вибрация при ответе</string>
+    <string name="settings_group_notifications">Напоминания и уведомления</string>
+    <string name="settings_days_title">Дни напоминаний</string>
+    <string name="settings_days_hint">Хотя бы один день остаётся включённым</string>
+    <string name="settings_system_notifications">Звук и важность уведомлений в системе</string>
+    <string name="settings_update_check">Проверять обновления</string>
+    <string name="settings_group_data">Данные</string>
+    <string name="settings_clear_history">Очистить историю переводов</string>
+    <string name="clear_history_title">Очистить историю?</string>
+    <string name="clear_history_text">Слова останутся в списках. Исчезнет только список прошлых запросов на вкладке «Перевод».</string>
+    <string name="settings_clear_confirm">Очистить</string>
+    <string name="settings_group_about">О приложении</string>
+    <string name="settings_version">Lexa %1$s</string>
+    <string name="settings_check_updates">Проверить обновления</string>
+    <string name="update_status_checking">Проверяю…</string>
+    <string name="update_status_latest">У тебя последняя версия</string>
+    <string name="settings_github">Исходный код на GitHub</string>
+    <string-array name="weekdays_short">
+        <item>Пн</item>
+        <item>Вт</item>
+        <item>Ср</item>
+        <item>Чт</item>
+        <item>Пт</item>
+        <item>Сб</item>
+        <item>Вс</item>
+    </string-array>
 </resources>

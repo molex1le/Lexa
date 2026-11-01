@@ -54,6 +54,8 @@ data class HomeUiState(
     val placement: Placement? = null,
     /** «12 из 20» for today. */
     val daily: DailyProgress = DailyProgress(done = 0, goal = Settings.DEFAULT_DAILY_GOAL),
+    /** The vibration on a right or wrong answer. */
+    val haptics: Boolean = true,
 ) {
     val hasWords: Boolean get() = counts.learned + counts.learning + counts.new > 0
 }
@@ -88,6 +90,7 @@ fun HomeRoute(
             onNext = viewModel::next,
             onFinish = viewModel::finish,
             onWordReturned = onWordReturned,
+            haptics = state.haptics,
             onHint = viewModel::showHint,
             onDontKnow = viewModel::dontKnow,
             onPronounce = viewModel::pronounce,

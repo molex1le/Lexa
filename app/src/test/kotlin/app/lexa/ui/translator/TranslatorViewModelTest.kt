@@ -58,6 +58,7 @@ private class FakeWords : TranslatedWordRepository {
 private object NoHistory : HistoryRepository {
     override fun observeHistory(): Flow<List<HistoryItem>> = MutableStateFlow(emptyList())
     override suspend fun record(query: String, wordId: Long?) = Unit
+    override suspend fun clear() = Unit
 }
 
 /** Typing translates by itself: after a pause, at once on paste, and without leaving half-typed words behind. */

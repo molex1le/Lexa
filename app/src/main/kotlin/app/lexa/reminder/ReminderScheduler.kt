@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import app.lexa.domain.model.ReminderDays
 import app.lexa.domain.reminder.ReminderTime
 import app.lexa.domain.time.TimeProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -12,8 +13,8 @@ import javax.inject.Inject
 
 /** Plans the daily review reminder (docs/ARCHITECTURE.md §13). */
 interface ReminderScheduler {
-    /** Replaces any planned reminder with one at the next [minutesOfDay]. */
-    fun schedule(minutesOfDay: Int)
+    /** Replaces any planned reminder with one at the next [minutesOfDay] on one of the weekdays in [days]. */
+    fun schedule(minutesOfDay: Int, days: Int = ReminderDays.ALL)
     fun cancel()
 }
 
@@ -27,8 +28,8 @@ class WorkManagerReminderScheduler @Inject constructor(
     private val time: TimeProvider,
 ) : ReminderScheduler {
 
-    override fun schedule(minutesOfDay: Int) {
-        val delay = ReminderTime.delayUntilNext(time.clock, minutesOfDay)
+    override fun schedule(minutesOfDay: Int, days: Int) {
+        val delay = ReminderTime.delayUntilNext(time.clock, minutesOfDay, days)
         val request = OneTimeWorkRequestBuilder<ReviewReminderWorker>()
             .setInitialDelay(delay.toMillis(), TimeUnit.MILLISECONDS)
             .build()

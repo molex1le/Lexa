@@ -147,7 +147,7 @@ class TrainingSessionTest {
     @Test fun `a session tops up due words with deck words of the level`() = runTest {
         repo.due = List(3) { card() }
         deck.words = List(30) { DeckWord(VocabLevel.B1, "w$it", "с$it") }
-        val cards = session.build(level = VocabLevel.B1)
+        val cards = session.build(level = VocabLevel.B1, newPerDay = 100)
         assertEquals(TrainingSession.SESSION_SIZE, cards.size)
         assertEquals(3, cards.count { it.deck == null })
         assertEquals(TrainingSession.maxDue(TrainingSession.SESSION_SIZE), repo.askedLimit)
@@ -198,8 +198,14 @@ class TrainingSessionTest {
     @Test fun `no new built-in words once ten joined today`() = runTest {
         repo.due = List(3) { card() }
         deck.words = List(30) { DeckWord(VocabLevel.B1, "w$it", "с$it") }
-        deck.addedToday = TrainingSession.DAILY_NEW_LIMIT
+        deck.addedToday = TrainingSession.DEFAULT_NEW_PER_DAY
         assertTrue(session.build(level = VocabLevel.B1).all { it.deck == null })
+    }
+
+    @Test fun `by default a session holds its due words and ten new ones`() = runTest {
+        repo.due = List(3) { card() }
+        deck.words = List(30) { DeckWord(VocabLevel.B1, "w$it", "с$it") }
+        assertEquals(13, session.build(level = VocabLevel.B1).size)
     }
 
     @Test fun `session size sets the number of cards and due words take at most 60 percent`() = runTest {
@@ -282,5 +288,13 @@ class TrainingSessionTest {
         val c = card().copy(term = "journey", translations = listOf("поездка"), synonyms = listOf("voyage"))
         assertEquals("journey", session.drill(c, CardDirection.RU_EN, "voyage").alsoRight)
         assertTrue(session.drill(c, CardDirection.RU_EN, "journey").check.isCorrect)
+    }
+
+    @Test fun `the new-words limit is the setting, counted against today`() = runTest {
+        deck.words = List(30) { DeckWord(VocabLevel.B1, "w$it", "с$it") }
+        deck.addedToday = 3
+        assertEquals(2, session.build(level = VocabLevel.B1, limit = 20, newPerDay = 5).size)
+        assertEquals(0, session.build(level = VocabLevel.B1, limit = 20, newPerDay = 0).size)
+        assertEquals(20, session.build(level = VocabLevel.B1, limit = 20, newPerDay = 100).size)
     }
 }

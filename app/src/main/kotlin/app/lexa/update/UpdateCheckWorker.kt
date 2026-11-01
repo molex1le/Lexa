@@ -15,6 +15,8 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import app.lexa.MainActivity
 import app.lexa.R
+import app.lexa.domain.repository.SettingsRepository
+import kotlinx.coroutines.flow.first
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
@@ -25,9 +27,11 @@ class UpdateCheckWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val updater: AppUpdater,
+    private val settings: SettingsRepository,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        if (!settings.settings.first().updateCheck) return Result.success()
         val release = updater.newerRelease() ?: return Result.success()
         val prefs = applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (prefs.getString(NOTIFIED, null) == release.version) return Result.success()

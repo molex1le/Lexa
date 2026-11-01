@@ -70,11 +70,13 @@ private class FakeSettings(initial: Settings) : SettingsRepository {
     override suspend fun setVocabLevel(level: app.lexa.domain.model.VocabLevel) { flow.value = flow.value.copy(vocabLevel = level) }
     override suspend fun setSessionSize(size: Int) { flow.value = flow.value.copy(sessionSize = size) }
     override suspend fun setDailyGoal(goal: Int) { flow.value = flow.value.copy(dailyGoal = goal) }
+    override suspend fun update(transform: (Settings) -> Settings) { flow.value = transform(flow.value) }
 }
 
 private class FakeScheduler : ReminderScheduler {
     val scheduled = mutableListOf<Int>()
-    override fun schedule(minutesOfDay: Int) { scheduled += minutesOfDay }
+    val scheduledDays = mutableListOf<Int>()
+    override fun schedule(minutesOfDay: Int, days: Int) { scheduled += minutesOfDay; scheduledDays += days }
     override fun cancel() = Unit
 }
 

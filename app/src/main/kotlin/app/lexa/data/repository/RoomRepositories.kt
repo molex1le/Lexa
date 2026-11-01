@@ -171,6 +171,8 @@ class RoomHistoryRepository @Inject constructor(
     private val dao: HistoryDao,
     private val time: TimeProvider,
 ) : HistoryRepository {
+    override suspend fun clear() = dao.clear()
+
     override suspend fun record(query: String, wordId: Long?) {
         dao.insert(
             TranslationHistoryEntity(

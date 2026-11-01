@@ -18,6 +18,7 @@ import app.lexa.ui.lists.ListsUiState
 import app.lexa.ui.navigation.LexaBottomBar
 import app.lexa.ui.navigation.ListTab
 import app.lexa.ui.navigation.TopLevel
+import app.lexa.domain.model.Settings
 import app.lexa.ui.settings.SettingsScreen
 import app.lexa.ui.settings.SettingsUiState
 import app.lexa.ui.stats.StatsScreen
@@ -378,15 +379,15 @@ class ScreenshotTest(private val dark: Boolean) {
     }
 
     @Test fun settings() = snap("settings") {
-        SettingsScreen(SettingsUiState(), onBack = {}, onDirectionChange = {})
+        SettingsScreen(SettingsUiState(appVersion = "0.6.0"), onBack = {})
     }
 
     @Test fun settingsLarge() = large("settings") {
-        SettingsScreen(SettingsUiState(reminderEnabled = true), onBack = {}, onDirectionChange = {})
+        SettingsScreen(SettingsUiState(Settings(reminderEnabled = true), appVersion = "0.6.0"), onBack = {})
     }
 
     @Test fun settingsReminderOn() = snap("settings_reminder") {
-        SettingsScreen(SettingsUiState(reminderEnabled = true), onBack = {}, onDirectionChange = {})
+        SettingsScreen(SettingsUiState(Settings(reminderEnabled = true), appVersion = "0.6.0"), onBack = {})
     }
 
     /** The sheet as it floats over the calling app: scrim above, the sheet body at the bottom. */
@@ -479,5 +480,36 @@ class ScreenshotTest(private val dark: Boolean) {
 
     @Test fun typeSpecimen() = snap("type_specimen") {
         TypeSpecimen()
+    }
+
+    /** The whole settings column on one tall image: the blocks below the first screen are reviewed too. */
+    @Test @Config(qualifiers = "w360dp-h3400dp-xxhdpi")
+    fun settingsFull() = snap("settings_full") {
+        SettingsScreen(
+            SettingsUiState(
+                Settings(
+                    reminderEnabled = true, vocabLevel = app.lexa.domain.model.VocabLevel.B1, dailyGoal = 35,
+                    reminderDays = 0b0011111, newWordsPerDay = 0,
+                ),
+                appVersion = "0.6.0",
+            ),
+            onBack = {},
+            updateStatus = app.lexa.ui.settings.UpdateStatus.UP_TO_DATE,
+        )
+    }
+
+    private fun fonts(name: String, word: app.lexa.domain.model.WordFont, ui: app.lexa.domain.model.UiFont) =
+        captureRoboImage("src/test/snapshots/${name}_$suffix.png") {
+            LexaTheme(darkTheme = dark, wordFont = word, uiFont = ui) { TypeSpecimen() }
+        }
+
+    @Test fun fontsLoraInter() = fonts("fonts_lora_inter", app.lexa.domain.model.WordFont.LORA, app.lexa.domain.model.UiFont.INTER)
+
+    @Test fun fontsSourceSerifSystem() =
+        fonts("fonts_sourceserif_system", app.lexa.domain.model.WordFont.SOURCE_SERIF, app.lexa.domain.model.UiFont.SYSTEM)
+
+    /** The same training card at 90 % and 130 % of the text size, to see the scale hold. */
+    @Test fun textScale130() = captureRoboImage("src/test/snapshots/text_scale130_$suffix.png") {
+        LexaTheme(darkTheme = dark, textScale = 1.3f) { TypeSpecimen() }
     }
 }

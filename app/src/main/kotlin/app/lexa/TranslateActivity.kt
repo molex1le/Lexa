@@ -19,6 +19,10 @@ import app.lexa.ui.share.SharedText
 import app.lexa.ui.share.SheetActions
 import app.lexa.ui.share.SheetContent
 import app.lexa.ui.share.TranslateSheetContent
+import androidx.compose.runtime.getValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import app.lexa.ui.theme.AppearanceViewModel
+import app.lexa.ui.theme.LexaAppTheme
 import app.lexa.ui.theme.LexaTheme
 import app.lexa.ui.translator.TranslatorViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -45,7 +49,8 @@ class TranslateActivity : ComponentActivity() {
         if (savedInstanceState == null && shared is SharedText.Query) viewModel.translate(shared.text)
 
         setContent {
-            LexaTheme {
+            val settings by hiltViewModel<AppearanceViewModel>().settings.collectAsStateWithLifecycle()
+            LexaAppTheme(settings) {
                 val state by viewModel.state.collectAsStateWithLifecycle()
                 val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                 val scope = rememberCoroutineScope()

@@ -105,13 +105,18 @@ class TrainingSession @Inject constructor(
      * [MAX_DUE], so new words always get a place) topped up with random unseen words of [level],
      * shuffled together.
      */
-    suspend fun build(practice: Boolean = false, level: VocabLevel? = null, limit: Int = SESSION_SIZE): List<TrainingCard> {
+    suspend fun build(
+        practice: Boolean = false,
+        level: VocabLevel? = null,
+        limit: Int = SESSION_SIZE,
+        newPerDay: Int = DEFAULT_NEW_PER_DAY,
+    ): List<TrainingCard> {
         if (practice) return repository.hardCards(limit)
         val due = repository.dueCards(time.nowMillis(), if (level == null) limit else maxDue(limit))
         if (level == null) return due
-        // At most DAILY_NEW_LIMIT unknown built-in words a day go to «Новые»; past that, only review.
+        // At most [newPerDay] unknown built-in words a day go to «Новые»; past that (or at 0), only review.
         val addedToday = deck.addedSince(time.startOfToday())
-        val room = if (addedToday >= DAILY_NEW_LIMIT) 0 else limit - due.size
+        val room = minOf(limit - due.size, newPerDay - addedToday).coerceAtLeast(0)
         val fresh = deck.randomUnseen(level, room).map { it.toCard() }
         return (due + fresh).shuffled(random)
     }
@@ -260,8 +265,8 @@ class TrainingSession @Inject constructor(
         const val SESSION_SIZE = 20
         /** A word answered wrong comes back at the end of the session at most this many times. */
         const val MAX_RETRIES = 2
-        /** Unknown built-in words that may join «Новые» per day. */
-        const val DAILY_NEW_LIMIT = 10
+        /** Unknown built-in words that may join «Новые» per day unless the settings say otherwise. */
+        const val DEFAULT_NEW_PER_DAY = 10
 
         /** Due words take at most 60 % of a session, so new words always get a place. */
         fun maxDue(limit: Int): Int = maxOf(1, limit * 3 / 5)
