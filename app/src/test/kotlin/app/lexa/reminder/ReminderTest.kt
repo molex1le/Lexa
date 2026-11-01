@@ -69,6 +69,7 @@ private class FakeSettings(initial: Settings) : SettingsRepository {
     override suspend fun setWordSort(sort: WordSort) { flow.value = flow.value.copy(wordSort = sort) }
     override suspend fun setVocabLevel(level: app.lexa.domain.model.VocabLevel) { flow.value = flow.value.copy(vocabLevel = level) }
     override suspend fun setSessionSize(size: Int) { flow.value = flow.value.copy(sessionSize = size) }
+    override suspend fun setDailyGoal(goal: Int) { flow.value = flow.value.copy(dailyGoal = goal) }
 }
 
 private class FakeScheduler : ReminderScheduler {

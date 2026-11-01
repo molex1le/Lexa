@@ -69,6 +69,7 @@ data class SettingsUiState(
     val direction: Direction = Direction.EN_RU,
     val vocabLevel: VocabLevel? = null,
     val sessionSize: Int = Settings.DEFAULT_SESSION_SIZE,
+    val dailyGoal: Int = Settings.DEFAULT_DAILY_GOAL,
     val reminderMinutes: Int = Settings.DEFAULT_REMINDER_MINUTES,
     val reminderEnabled: Boolean = false,
     /** Notifications were refused when the reminder was turned on. */
@@ -90,6 +91,7 @@ fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewMod
         onDirectionChange = viewModel::onDirectionChange,
         onLevelChange = viewModel::onLevelChange,
         onSessionSizeChange = viewModel::onSessionSizeChange,
+        onDailyGoalChange = viewModel::onDailyGoalChange,
         onReminderToggle = { enabled ->
             val needsPermission = enabled && Build.VERSION.SDK_INT >= 33 &&
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
@@ -110,6 +112,7 @@ fun SettingsScreen(
     onReminderTimeChange: (Int) -> Unit = {},
     onLevelChange: (VocabLevel) -> Unit = {},
     onSessionSizeChange: (Int) -> Unit = {},
+    onDailyGoalChange: (Int) -> Unit = {},
 ) {
     var pickingTime by rememberSaveable { mutableStateOf(false) }
     val colors = LexaTheme.colors
@@ -141,7 +144,10 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(Spacing.xl))
             SectionTitle(R.string.settings_session_title)
-            SessionSizeChoice(state.sessionSize, onSessionSizeChange)
+            NumberChoice(PRESET_SIZES, state.sessionSize, Settings.SESSION_SIZES, R.string.settings_session_custom, onSessionSizeChange)
+            Spacer(Modifier.height(Spacing.xl))
+            SectionTitle(R.string.settings_goal_title)
+            NumberChoice(PRESET_GOALS, state.dailyGoal, Settings.DAILY_GOALS, R.string.settings_goal_custom, onDailyGoalChange)
             Spacer(Modifier.height(Spacing.xl))
             SectionTitle(R.string.settings_reminder_title)
             ReminderSwitch(state.reminderEnabled, onReminderToggle)
@@ -296,19 +302,20 @@ private fun OptionRow(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 private val PRESET_SIZES = listOf(10, 20, 30)
+private val PRESET_GOALS = listOf(10, 20, 30, 50)
 
-/** 10 / 20 / 30, or any number 5–100 typed in (applied on «Готово» or when the field loses focus). */
+/** The presets, or any number in [range] typed in (applied on «Готово» or when the field loses focus). */
 @Composable
-private fun SessionSizeChoice(size: Int, onChange: (Int) -> Unit) {
+private fun NumberChoice(presets: List<Int>, value: Int, range: IntRange, @StringRes customLabel: Int, onChange: (Int) -> Unit) {
     val colors = LexaTheme.colors
     val type = LexaTheme.type
     Column(Modifier.selectableGroup()) {
-        PRESET_SIZES.forEach { preset -> OptionRow(preset.toString(), size == preset) { onChange(preset) } }
+        presets.forEach { preset -> OptionRow(preset.toString(), value == preset) { onChange(preset) } }
     }
-    var text by rememberSaveable(size) { mutableStateOf(if (size in PRESET_SIZES) "" else size.toString()) }
-    val label = stringResource(R.string.settings_session_custom)
+    var text by rememberSaveable(value) { mutableStateOf(if (value in presets) "" else value.toString()) }
+    val label = stringResource(customLabel)
     fun apply() {
-        text.toIntOrNull()?.let { onChange(it.coerceIn(Settings.SESSION_SIZES)) }
+        text.toIntOrNull()?.let { onChange(it.coerceIn(range)) }
     }
     androidx.compose.foundation.text.BasicTextField(
         value = text,

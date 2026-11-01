@@ -2,4 +2,7 @@
 <resources>
     <color name="paper">#141413</color>
     <color name="marker">#F0CF34</color>
+    <color name="widget_sheet">#22221F</color>
+    <color name="widget_ink">#ECEAE2</color>
+    <color name="widget_pencil">#A6A49B</color>
 </resources>

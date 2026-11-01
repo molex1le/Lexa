@@ -14,4 +14,5 @@ interface SettingsRepository {
     suspend fun setWordSort(sort: WordSort)
     suspend fun setVocabLevel(level: VocabLevel)
     suspend fun setSessionSize(size: Int)
+    suspend fun setDailyGoal(goal: Int)
 }

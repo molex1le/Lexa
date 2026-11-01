@@ -38,6 +38,15 @@
     <string name="level_choose_other">Выбрать другой уровень</string>
     <string name="settings_level_title">Уровень новых слов</string>
     <string name="training_progress">%1$d из %2$d</string>
+    <string name="training_progress_retry">%1$d из %2$d&#160;– повтор ошибки</string>
+    <string name="training_retry_right">Верно&#160;– теперь это слово запомнится лучше. Оценка за него уже поставлена</string>
+    <string name="training_retry_again">Ещё не то&#160;– вернёмся к этому слову в конце тренировки ещё раз</string>
+    <string name="training_retry_left">Пока не получилось&#160;– слово остаётся в «Новых», вернётся в следующей тренировке</string>
+    <string name="goal_today">Сегодня %1$d из %2$d</string>
+    <string name="goal_reached">Цель на сегодня выполнена&#160;– %1$d из %2$d</string>
+    <string name="goal_title">Цель на день</string>
+    <string name="settings_goal_title">Цель на день, карточек</string>
+    <string name="settings_goal_custom">Своё число (5–200)</string>
     <string name="training_answer_label">Ответ</string>
     <string name="training_hint_russian">Перевод на русский</string>
     <string name="training_hint_english">Слово по-английски</string>
@@ -253,4 +262,7 @@
     <string name="update_later">Позже</string>
     <string name="update_failed">Обновление не скачалось. Проверь интернет и нажми «Обновить» ещё раз</string>
     <string name="update_channel">Обновления Lexa</string>
+    <string name="widget_title">Повторить сегодня</string>
+    <string name="widget_description">Сколько слов ждут повторения и сколько карточек осталось до цели на день</string>
+    <string name="widget_description_a11y">На повторение %1$d. %2$s</string>
 </resources>

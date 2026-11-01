@@ -294,7 +294,37 @@ class ScreenshotTest(private val dark: Boolean) {
 
     @Test fun trainingWithLevel() = homeSnap(
         "training_level",
-        HomeUiState(isLoading = false, dueCount = 4, level = app.lexa.domain.model.VocabLevel.B1),
+        HomeUiState(
+            isLoading = false, dueCount = 4, level = app.lexa.domain.model.VocabLevel.B1,
+            daily = app.lexa.domain.training.DailyProgress(done = 12, goal = 20),
+        ),
+    )
+
+    @Test fun trainingGoalReached() = homeSnap(
+        "training_goal_reached",
+        HomeUiState(
+            isLoading = false, dueCount = 0, level = app.lexa.domain.model.VocabLevel.B1,
+            daily = app.lexa.domain.training.DailyProgress(done = 20, goal = 20),
+        ),
+    )
+
+    @Test fun trainingRetry() = trainingSnap(
+        "training_retry",
+        TrainingPhase.Question(commuteCard.copy(box = 1), position = 13, total = 14, retry = true),
+    )
+
+    @Test fun trainingRetryWrong() = trainingSnap(
+        "training_retry_wrong",
+        TrainingPhase.Feedback(
+            card = commuteCard.copy(box = 1), position = 13, total = 14, answer = "ехать", verdict = Verdict.WRONG,
+            correctAnswer = "ездить на работу, поездка на работу", boxAfter = 1, learned = false,
+            example = null, retry = true, retryAgain = true,
+        ),
+    )
+
+    @Test fun trainingDoneWithGoal() = trainingSnap(
+        "training_done_goal",
+        TrainingPhase.Done(correct = 9, total = 12, daily = app.lexa.domain.training.DailyProgress(done = 20, goal = 20)),
     )
 
     @Test fun translator() = snap("translator") {

@@ -3,6 +3,10 @@
 <resources>
     <color name="paper">#F5F5F2</color>
     <color name="marker">#FFDD3C</color>
+    <!-- The widget cannot read the Compose theme: its own copy of the tokens (docs/DESIGN_TOKENS.md) -->
+    <color name="widget_sheet">#EAEAE5</color>
+    <color name="widget_ink">#1C2030</color>
+    <color name="widget_pencil">#565B6B</color>
     <color name="launcher_paper">#F5F5F2</color>
     <color name="launcher_ink">#1C2030</color>
 </resources>

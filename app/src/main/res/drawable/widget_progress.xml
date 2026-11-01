@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A flat 4dp bar: ink on a tone step, like the bar on the «Тренировка» tab -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle"><solid android:color="@color/widget_sheet" /></shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape android:shape="rectangle"><solid android:color="@color/widget_ink" /></shape>
+        </clip>
+    </item>
+</layer-list>

@@ -1,5 +1,19 @@
 package app.lexa.ui.home
 
+import androidx.compose.ui.semantics.contentDescription
+
+import androidx.compose.ui.semantics.semantics
+
+import androidx.compose.ui.unit.dp
+
+import androidx.compose.foundation.layout.fillMaxWidth
+
+import androidx.compose.foundation.layout.Box
+
+import app.lexa.domain.model.Settings
+
+import app.lexa.domain.training.DailyProgress
+
 import app.lexa.domain.model.VocabLevel
 
 import androidx.compose.foundation.background
@@ -38,6 +52,8 @@ data class HomeUiState(
     /** Null until the learner picks a level or takes the test: the tab asks for it first. */
     val level: VocabLevel? = null,
     val placement: Placement? = null,
+    /** «12 из 20» for today. */
+    val daily: DailyProgress = DailyProgress(done = 0, goal = Settings.DEFAULT_DAILY_GOAL),
 ) {
     val hasWords: Boolean get() = counts.learned + counts.learning + counts.new > 0
 }
@@ -134,7 +150,9 @@ fun HomeScreen(
                 chosen == null -> LevelPicker(level.onChoose, level.onTakeTest)
                 else -> {
                     Text(stringResource(R.string.training_level_line, chosen.name), style = LexaTheme.type.body, color = colors.pencil)
-                    Spacer(Modifier.height(Spacing.m))
+                    Spacer(Modifier.height(Spacing.l))
+                    DailyGoal(state.daily)
+                    Spacer(Modifier.height(Spacing.l))
                     MarkerButton(stringResource(R.string.training_start), onClick = onStart)
                 }
             }
@@ -149,6 +167,22 @@ fun HomeScreen(
                 color = colors.pencil,
             )
             Spacer(Modifier.height(Spacing.m))
+        }
+    }
+}
+
+/** «Сегодня 12 из 20» and a thin bar: ink on a tone step, full once the goal is reached. */
+@Composable
+private fun DailyGoal(progress: DailyProgress) {
+    val colors = LexaTheme.colors
+    val text = if (progress.reached) stringResource(R.string.goal_reached, progress.done, progress.goal)
+    else stringResource(R.string.goal_today, progress.done, progress.goal)
+    val description = stringResource(R.string.goal_title) + ": " + text
+    Column(Modifier.semantics(mergeDescendants = true) { contentDescription = description }) {
+        Text(text, style = LexaTheme.type.body, color = colors.ink)
+        Spacer(Modifier.height(Spacing.s))
+        Box(Modifier.fillMaxWidth().height(4.dp).background(colors.sheet)) {
+            Box(Modifier.fillMaxWidth(progress.fraction).height(4.dp).background(colors.ink))
         }
     }
 }

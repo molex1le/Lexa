@@ -18,8 +18,8 @@ android {
         applicationId = "app.lexa"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 5
-        versionName = "0.4.1"
+        versionCode = 6
+        versionName = "0.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Modern phones only: ML Kit ships a ~16 MB native library per ABI, and the other three
         // (armeabi-v7a, x86, x86_64) would add ~45 MB for devices the owner doesn't use.

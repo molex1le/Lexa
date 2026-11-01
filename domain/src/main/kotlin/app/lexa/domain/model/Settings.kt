@@ -10,10 +10,14 @@ data class Settings(
     val vocabLevel: VocabLevel? = null,
     /** Cards per training session (5–100). */
     val sessionSize: Int = DEFAULT_SESSION_SIZE,
+    /** Cards to answer a day (5–200); the overview shows «12 из 20». */
+    val dailyGoal: Int = DEFAULT_DAILY_GOAL,
 ) {
     companion object {
         const val DEFAULT_REMINDER_MINUTES = 19 * 60
         const val DEFAULT_SESSION_SIZE = 20
+        const val DEFAULT_DAILY_GOAL = 20
+        val DAILY_GOALS = 5..200
         val SESSION_SIZES = 5..100
     }
 }

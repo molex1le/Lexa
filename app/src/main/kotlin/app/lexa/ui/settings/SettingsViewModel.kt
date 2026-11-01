@@ -29,11 +29,16 @@ class SettingsViewModel @Inject constructor(
             direction = s.direction,
             vocabLevel = s.vocabLevel,
             sessionSize = s.sessionSize,
+            dailyGoal = s.dailyGoal,
             reminderMinutes = s.reminderMinutes,
             reminderEnabled = s.reminderEnabled,
             notificationsDenied = denied && !s.reminderEnabled,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+
+    fun onDailyGoalChange(goal: Int) {
+        viewModelScope.launch { settings.setDailyGoal(goal) }
+    }
 
     fun onSessionSizeChange(size: Int) {
         viewModelScope.launch { settings.setSessionSize(size) }

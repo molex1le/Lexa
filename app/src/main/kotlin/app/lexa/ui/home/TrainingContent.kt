@@ -1,5 +1,6 @@
 package app.lexa.ui.home
 
+import app.lexa.domain.training.DailyProgress
 import app.lexa.ui.components.LexaIconButton
 
 import androidx.compose.foundation.layout.width
@@ -97,6 +98,8 @@ sealed interface TrainingPhase {
         val answer: String = "",
         /** «j _ _ _ _ _ _» once «Подсказка» was tapped. */
         val hint: String? = null,
+        /** The word was answered wrong earlier: this card repeats it at the end of the session. */
+        val retry: Boolean = false,
     ) : TrainingPhase {
         val canCheck: Boolean get() = answer.isNotBlank()
     }
@@ -123,9 +126,13 @@ sealed interface TrainingPhase {
         val alsoRight: String? = null,
         /** «Убрать из изучения» / «Я это знаю» was used on this card. */
         val removed: Boolean = false,
+        /** A retry: nothing was written. */
+        val retry: Boolean = false,
+        /** A wrong retry that will come round once more. */
+        val retryAgain: Boolean = false,
     ) : TrainingPhase
 
-    data class Done(val correct: Int, val total: Int) : TrainingPhase
+    data class Done(val correct: Int, val total: Int, val daily: DailyProgress? = null) : TrainingPhase
 }
 
 /** Session callbacks, grouped so the stateless screen stays readable. */
@@ -166,10 +173,10 @@ fun TrainingContent(phase: TrainingPhase, actions: TrainingActions, modifier: Mo
 }
 
 @Composable
-private fun Progress(position: Int, total: Int) {
+private fun Progress(position: Int, total: Int, retry: Boolean = false) {
     Box(Modifier.heightIn(min = Spacing.touch), contentAlignment = Alignment.CenterStart) {
         Text(
-            stringResource(R.string.training_progress, position, total),
+            stringResource(if (retry) R.string.training_progress_retry else R.string.training_progress, position, total),
             style = LexaTheme.type.meta,
             color = LexaTheme.colors.pencil,
         )
@@ -222,7 +229,7 @@ private fun QuestionCard(phase: TrainingPhase.Question, actions: TrainingActions
     val type = LexaTheme.type
     val focus = remember { FocusRequester() }
     val label = stringResource(R.string.training_answer_label)
-    Progress(phase.position, phase.total)
+    Progress(phase.position, phase.total, phase.retry)
     // The English word may be heard while answering; in RU→EN the sound would give the answer away.
     CardFace(phase.card, onSpeak = actions.onPronounce.takeUnless { phase.card.expectsEnglish }) { CardBoxes(phase.card.box) }
     BasicTextField(
@@ -294,7 +301,7 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
     val markerAt = remember(phase.position) {
         Animatable(if (correct && !still) phase.card.box.toFloat() else phase.boxAfter.toFloat())
     }
-    val flight = remember(phase.position) { Animatable(if (returned && wrong) 1f else 0f) }
+    val flight = remember(phase.position) { Animatable(if (returned && wrong && !phase.retry) 1f else 0f) }
     val celebrate = remember(phase.position) { Animatable(if (still) 1f else 0f) }
     LaunchedEffect(phase.position, phase.verdict) {
         if (played == phase.verdict) return@LaunchedEffect
@@ -304,7 +311,7 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
         val box = phase.boxAfter.toFloat()
         if (reduced) markerAt.snapTo(box)
         else markerAt.animateTo(box, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow))
-        if (wrong && !returned) {
+        if (wrong && !returned && !phase.retry) {
             returned = true
             if (!reduced) flight.animateTo(1f, spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow))
             actions.onWordReturned()
@@ -318,7 +325,7 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
             celebrate.animateTo(1f, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow))
         }
     }
-    Progress(phase.position, phase.total)
+    Progress(phase.position, phase.total, phase.retry)
     val angle = flip.value
     if (angle < 90f) {
         // Front: the question as it was, turning away. Text is never shown mirrored.
@@ -391,7 +398,7 @@ private fun FeedbackCard(phase: TrainingPhase.Feedback, actions: TrainingActions
     if (phase.removed) {
         Text(stringResource(R.string.training_removed), style = type.body, color = colors.pencil)
     } else {
-        if (phase.verdict == Verdict.WRONG) TextAction(stringResource(R.string.training_override), actions.onOverride)
+        if (phase.verdict == Verdict.WRONG && !phase.retry) TextAction(stringResource(R.string.training_override), actions.onOverride)
         // A built-in word answered right is already gone from training: nothing to remove.
         if (!(phase.fromDeck && correct)) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.l)) {
@@ -523,6 +530,10 @@ private fun BoxesExplainer() {
 @Composable
 private fun statusLine(phase: TrainingPhase.Feedback): String = when {
     phase.removed -> ""
+    phase.retry && phase.verdict == Verdict.ALSO_RIGHT -> stringResource(R.string.training_also_right_status)
+    phase.retry && (phase.verdict == Verdict.WRONG || phase.verdict == Verdict.GAVE_UP) ->
+        stringResource(if (phase.retryAgain) R.string.training_retry_again else R.string.training_retry_left)
+    phase.retry -> stringResource(R.string.training_retry_right)
     phase.verdict == Verdict.ALSO_RIGHT -> stringResource(R.string.training_also_right_status)
     phase.fromDeck && phase.hinted && phase.verdict != Verdict.WRONG -> stringResource(R.string.training_deck_added_hint)
     phase.hinted && phase.verdict != Verdict.WRONG -> stringResource(R.string.training_hinted_status)
@@ -567,6 +578,15 @@ private fun SessionDone(phase: TrainingPhase.Done, actions: TrainingActions) {
         style = LexaTheme.type.body,
         color = LexaTheme.colors.pencil,
     )
+    phase.daily?.let { daily ->
+        Spacer(Modifier.height(Spacing.s))
+        Text(
+            if (daily.reached) stringResource(R.string.goal_reached, daily.done, daily.goal)
+            else stringResource(R.string.goal_today, daily.done, daily.goal),
+            style = LexaTheme.type.body,
+            color = LexaTheme.colors.pencil,
+        )
+    }
     Spacer(Modifier.height(Spacing.l))
     MarkerButton(stringResource(R.string.training_finish), onClick = actions.onFinish)
 }

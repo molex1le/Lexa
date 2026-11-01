@@ -86,6 +86,9 @@ data class AnswerResult(
     val alsoRight: String? = null,
 )
 
+/** The check of a retry answer: nothing was written. [alsoRight] is another right English word (RU→EN). */
+data class DrillResult(val check: CheckResult, val alsoRight: String? = null)
+
 /**
  * A training session (docs/ARCHITECTURE.md §9): builds the queue, checks each answer, moves the word
  * between boxes and writes a review_log row per answer.
@@ -204,6 +207,20 @@ class TrainingSession @Inject constructor(
     }
 
     /**
+     * The retry of a word answered wrong earlier in the session: only checks the answer. The boxes, the
+     * mistake count and the review log already took the first answer, so a retry changes nothing.
+     */
+    suspend fun drill(card: TrainingCard, direction: CardDirection, userAnswer: String, mode: AnswerMode = AnswerMode.TYPED): DrillResult {
+        val expected = expected(card, direction)
+        if (mode == AnswerMode.GAVE_UP) return DrillResult(CheckResult.Wrong(expected))
+        val check = AnswerChecker.check(userAnswer, expected, language(direction))
+        if (check is CheckResult.Wrong && direction == CardDirection.RU_EN && isAnotherRightWord(card, userAnswer)) {
+            return DrillResult(check, alsoRight = card.term)
+        }
+        return DrillResult(check)
+    }
+
+    /**
      * RU→EN: «trip» for «поездка» when «journey» is taught. Right if the answer is a synonym of the
      * term, or a word (in the list or the built-in set) sharing a Russian translation with it.
      */
@@ -241,6 +258,8 @@ class TrainingSession @Inject constructor(
 
     companion object {
         const val SESSION_SIZE = 20
+        /** A word answered wrong comes back at the end of the session at most this many times. */
+        const val MAX_RETRIES = 2
         /** Unknown built-in words that may join «Новые» per day. */
         const val DAILY_NEW_LIMIT = 10
 

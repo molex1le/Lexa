@@ -32,6 +32,7 @@ class DataStoreSettingsRepository @Inject constructor(
                 ?: WordSort.ADDED,
             vocabLevel = prefs[Keys.vocabLevel]?.let { name -> VocabLevel.entries.firstOrNull { it.name == name } },
             sessionSize = prefs[Keys.sessionSize]?.coerceIn(Settings.SESSION_SIZES) ?: Settings.DEFAULT_SESSION_SIZE,
+            dailyGoal = prefs[Keys.dailyGoal]?.coerceIn(Settings.DAILY_GOALS) ?: Settings.DEFAULT_DAILY_GOAL,
         )
     }
 
@@ -51,6 +52,10 @@ class DataStoreSettingsRepository @Inject constructor(
         store.edit { it[Keys.wordSort] = sort.name }
     }
 
+    override suspend fun setDailyGoal(goal: Int) {
+        store.edit { it[Keys.dailyGoal] = goal.coerceIn(Settings.DAILY_GOALS) }
+    }
+
     override suspend fun setSessionSize(size: Int) {
         store.edit { it[Keys.sessionSize] = size.coerceIn(Settings.SESSION_SIZES) }
     }
@@ -66,5 +71,6 @@ class DataStoreSettingsRepository @Inject constructor(
         val wordSort = stringPreferencesKey("wordSort")
         val vocabLevel = stringPreferencesKey("vocabLevel")
         val sessionSize = intPreferencesKey("sessionSize")
+        val dailyGoal = intPreferencesKey("dailyGoal")
     }
 }

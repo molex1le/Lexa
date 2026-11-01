@@ -49,6 +49,21 @@ private object FixedSettings : SettingsRepository {
     override suspend fun setWordSort(sort: WordSort) = Unit
     override suspend fun setVocabLevel(level: app.lexa.domain.model.VocabLevel) = Unit
     override suspend fun setSessionSize(size: Int) = Unit
+    override suspend fun setDailyGoal(goal: Int) = Unit
+}
+
+private class FakeProgress : app.lexa.domain.training.DailyProgressRepository {
+    val state = kotlinx.coroutines.flow.MutableStateFlow(app.lexa.domain.training.DayCount(-1, 0))
+    override val count: Flow<app.lexa.domain.training.DayCount> = state
+    override suspend fun add(epochDay: Long) {
+        val now = state.value
+        state.value = app.lexa.domain.training.DayCount(epochDay, if (now.epochDay == epochDay) now.count + 1 else 1)
+    }
+}
+
+private class CountingWidgets : app.lexa.widget.WidgetRefresher {
+    var refreshes = 0
+    override fun refresh() { refreshes++ }
 }
 
 /** The session state machine against an in-memory database whose queries run inline. */
@@ -82,6 +97,9 @@ class HomeViewModelTest {
 
     private val deck by lazy { app.lexa.data.repository.AssetDeckRepository({ "" }, db, time, kotlin.random.Random(1)) }
 
+    private val progress = FakeProgress()
+    private val widgets = CountingWidgets()
+
     private fun viewModel() = HomeViewModel(
         SavedStateHandle(),
         RoomWordRepository(db.wordDao(), time),
@@ -91,6 +109,8 @@ class HomeViewModelTest {
         deck,
         time,
         app.lexa.ui.translator.Pronouncer(androidx.test.core.app.ApplicationProvider.getApplicationContext()),
+        progress,
+        widgets,
     )
 
     /** Runs what is queued now, never the midnight ticker's day-long delay. */
@@ -118,5 +138,113 @@ class HomeViewModelTest {
 
         vm.next()
         assertEquals(2, assertIs<TrainingPhase.Question>(vm.phase.value).position)
+    }
+
+    private fun TestScope.answerWrong(vm: HomeViewModel) {
+        vm.onAnswerChange("не то")
+        vm.check()
+        settle()
+    }
+
+    private fun TestScope.answerRight(vm: HomeViewModel, text: String) {
+        vm.onAnswerChange(text)
+        vm.check()
+        settle()
+    }
+
+    @Test fun `a wrong answer comes back at the end of the session`() = runTest(dispatcher) {
+        word("commute", added = 1)
+        word("eager", added = 2)
+        val vm = viewModel()
+        vm.start()
+        settle()
+        answerWrong(vm)
+        vm.next()
+        // The second card is a first answer; the retry of the first one follows it.
+        val second = assertIs<TrainingPhase.Question>(vm.phase.value)
+        assertEquals(2, second.position)
+        assertEquals(3, second.total)
+        answerRight(vm, "перевод eager")
+        vm.next()
+        val retry = assertIs<TrainingPhase.Question>(vm.phase.value)
+        assertEquals(3, retry.position)
+        assertEquals(true, retry.retry)
+        assertEquals("commute", retry.card.prompt)
+        assertEquals(1, retry.card.box)
+    }
+
+    @Test fun `a retry writes nothing and the summary counts the first answers only`() = runTest(dispatcher) {
+        word("commute", added = 1)
+        val vm = viewModel()
+        vm.start()
+        settle()
+        answerWrong(vm)
+        vm.next()
+        val before = db.reviewLogDao().let { dao -> db.openHelper.readableDatabase.query("SELECT COUNT(*) FROM review_log").use { it.moveToFirst(); it.getInt(0) } }
+        answerRight(vm, "перевод commute")
+        val feedback = assertIs<TrainingPhase.Feedback>(vm.phase.value)
+        assertEquals(Verdict.CORRECT, feedback.verdict)
+        assertEquals(true, feedback.retry)
+        val after = db.openHelper.readableDatabase.query("SELECT COUNT(*) FROM review_log").use { it.moveToFirst(); it.getInt(0) }
+        assertEquals(before, after)
+        vm.next()
+        val done = assertIs<TrainingPhase.Done>(vm.phase.value)
+        assertEquals(0, done.correct)
+        assertEquals(1, done.total)
+    }
+
+    @Test fun `a wrong retry comes round at most twice`() = runTest(dispatcher) {
+        word("commute", added = 1)
+        val vm = viewModel()
+        vm.start()
+        settle()
+        answerWrong(vm) // first answer
+        repeat(2) {
+            vm.next()
+            assertEquals(true, assertIs<TrainingPhase.Question>(vm.phase.value).retry)
+            answerWrong(vm)
+        }
+        vm.next()
+        assertIs<TrainingPhase.Done>(vm.phase.value)
+    }
+
+    @Test fun `typo override takes the queued retry away`() = runTest(dispatcher) {
+        word("commute", added = 1)
+        val vm = viewModel()
+        vm.start()
+        settle()
+        answerWrong(vm)
+        vm.overrideAsTypo()
+        settle()
+        vm.next()
+        assertIs<TrainingPhase.Done>(vm.phase.value)
+    }
+
+    @Test fun `removing the word takes the queued retry away`() = runTest(dispatcher) {
+        word("commute", added = 1)
+        val vm = viewModel()
+        vm.start()
+        settle()
+        answerWrong(vm)
+        vm.removeWord()
+        settle()
+        vm.next()
+        assertIs<TrainingPhase.Done>(vm.phase.value)
+    }
+
+    @Test fun `each first answer counts towards the daily goal, retries do not`() = runTest(dispatcher) {
+        word("commute", added = 1)
+        word("eager", added = 2)
+        val vm = viewModel()
+        vm.start()
+        settle()
+        answerWrong(vm)
+        vm.next()
+        answerRight(vm, "перевод eager")
+        vm.next()
+        answerRight(vm, "перевод commute") // the retry
+        assertEquals(2, progress.state.value.count)
+        assertEquals(time.today().toEpochDay(), progress.state.value.epochDay)
+        assertEquals(true, widgets.refreshes > 0)
     }
 }

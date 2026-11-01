@@ -262,4 +262,25 @@ class TrainingSessionTest {
         session.markKnown(c, null)
         assertTrue("reluctant" in deck.known)
     }
+
+    @Test fun `a retry only checks the answer and writes nothing`() = runTest {
+        val c = card(box = 1)
+        val right = session.drill(c, CardDirection.EN_RU, "поездка")
+        assertTrue(right.check.isCorrect)
+        val wrong = session.drill(c, CardDirection.EN_RU, "автобус")
+        assertIs<CheckResult.Wrong>(wrong.check)
+        assertTrue(repo.log.isEmpty())
+        assertTrue(repo.states.isEmpty())
+        assertTrue(deck.added.isEmpty() && deck.known.isEmpty())
+    }
+
+    @Test fun `a retry given up on is wrong`() = runTest {
+        assertIs<CheckResult.Wrong>(session.drill(card(), CardDirection.EN_RU, "", AnswerMode.GAVE_UP).check)
+    }
+
+    @Test fun `a retry in the other direction accepts a synonym without credit`() = runTest {
+        val c = card().copy(term = "journey", translations = listOf("поездка"), synonyms = listOf("voyage"))
+        assertEquals("journey", session.drill(c, CardDirection.RU_EN, "voyage").alsoRight)
+        assertTrue(session.drill(c, CardDirection.RU_EN, "journey").check.isCorrect)
+    }
 }

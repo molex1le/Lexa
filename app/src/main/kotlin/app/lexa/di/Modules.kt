@@ -112,7 +112,9 @@ abstract class RepositoryModule {
     @Binds abstract fun statsRepository(impl: RoomStatsRepository): StatsRepository
     @Binds abstract fun historyRepository(impl: RoomHistoryRepository): HistoryRepository
     @Binds abstract fun settingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
+    @Binds abstract fun dailyProgress(impl: app.lexa.data.settings.DataStoreDailyProgress): app.lexa.domain.training.DailyProgressRepository
     @Binds abstract fun translatedWordRepository(impl: RoomTranslatedWordRepository): TranslatedWordRepository
+    @Binds abstract fun widgetRefresher(impl: app.lexa.widget.AppWidgetRefresher): app.lexa.widget.WidgetRefresher
     @Binds abstract fun trainingRepository(impl: RoomTrainingRepository): TrainingRepository
     @Binds abstract fun deckRepository(impl: app.lexa.data.repository.AssetDeckRepository): app.lexa.domain.training.DeckRepository
     @Binds abstract fun reminderScheduler(impl: app.lexa.reminder.WorkManagerReminderScheduler): app.lexa.reminder.ReminderScheduler

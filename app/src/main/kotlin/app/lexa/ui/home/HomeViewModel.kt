@@ -10,7 +10,12 @@ import app.lexa.domain.repository.WordRepository
 import app.lexa.domain.time.TimeProvider
 import app.lexa.domain.training.AnswerResult
 import app.lexa.domain.training.CardDirection
+import app.lexa.domain.model.Settings
 import app.lexa.domain.training.AnswerMode
+import app.lexa.domain.training.DailyProgress
+import app.lexa.domain.training.DailyProgressRepository
+import app.lexa.domain.training.progressOn
+import app.lexa.widget.WidgetRefresher
 import app.lexa.domain.training.CheckResult
 import app.lexa.ui.translator.Pronouncer
 import app.lexa.domain.training.DeckRepository
@@ -49,6 +54,8 @@ class HomeViewModel @Inject constructor(
     private val deck: DeckRepository,
     private val time: TimeProvider,
     private val pronouncer: Pronouncer,
+    private val progress: DailyProgressRepository,
+    private val widgets: WidgetRefresher,
 ) : ViewModel() {
 
     /**
@@ -63,13 +70,18 @@ class HomeViewModel @Inject constructor(
     /** The running session alone, for tests that should not depend on the Room flows behind [state]. */
     internal val phase: StateFlow<TrainingPhase?> get() = session
 
+    /** «12 из 20» for today; re-read at midnight through [now], so a new day starts at 0. */
+    private val dailyProgress: StateFlow<DailyProgress> = combine(progress.count, settings.settings, now) { count, s, _ ->
+        count.progressOn(time.today().toEpochDay(), s.dailyGoal)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DailyProgress(done = 0, goal = Settings.DEFAULT_DAILY_GOAL))
+
     val state: StateFlow<HomeUiState> = combine(
-        combine(now.flatMapLatest { words.observeDueCount(it) }, words.observeCounts(), ::Pair),
+        combine(now.flatMapLatest { words.observeDueCount(it) }, words.observeCounts(), dailyProgress, ::Triple),
         now.flatMapLatest { stats.observeStreak(time.today()) },
         session,
         settings.settings,
         placement,
-    ) { (due, counts), streak, phase, s, test ->
+    ) { (due, counts, daily), streak, phase, s, test ->
         HomeUiState(
             isLoading = false,
             dueCount = due,
@@ -78,6 +90,7 @@ class HomeViewModel @Inject constructor(
             session = phase,
             level = s.vocabLevel,
             placement = test,
+            daily = daily,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
@@ -116,8 +129,17 @@ class HomeViewModel @Inject constructor(
         placement.value = null
     }
 
-    private var cards: List<TrainingCard> = emptyList()
-    private var directions: List<CardDirection> = emptyList()
+    private var cards: MutableList<TrainingCard> = mutableListOf()
+    private var directions: MutableList<CardDirection> = mutableListOf()
+
+    /** Per slot: null for a first answer; for a retry, the result of the answer it repeats. */
+    private val retryOf: MutableList<AnswerResult?> = mutableListOf()
+
+    /** Per slot: 0 for a first answer, 1.. for the n-th retry of that word. */
+    private val retryRound: MutableList<Int> = mutableListOf()
+
+    /** The cards the session started with: the summary counts these, not the retries added on the way. */
+    private var originalSize = 0
     private var index = 0
     private var correct = 0
     private var practice = false
@@ -142,14 +164,18 @@ class HomeViewModel @Inject constructor(
                 bestStreakAtStart = stats.observeStreak(time.today()).first().best
                 val direction = settings.settings.first().direction
                 val prefs = settings.settings.first()
-                cards = training.build(practice, prefs.vocabLevel, prefs.sessionSize)
+                cards = training.build(practice, prefs.vocabLevel, prefs.sessionSize).toMutableList()
                 directions = cards.map {
                     when (direction) {
                         Direction.EN_RU -> CardDirection.EN_RU
                         Direction.RU_EN -> CardDirection.RU_EN
                         Direction.MIXED -> if (Random.nextBoolean()) CardDirection.EN_RU else CardDirection.RU_EN
                     }
-                }
+                }.toMutableList()
+                retryOf.clear()
+                retryRound.clear()
+                cards.forEach { _ -> retryOf += null; retryRound += 0 }
+                originalSize = cards.size
                 index = 0
                 correct = 0
                 if (cards.isNotEmpty()) session.value = question()
@@ -195,9 +221,15 @@ class HomeViewModel @Inject constructor(
                 val card = cards[index]
                 val direction = directions[index]
                 val typed = if (mode == AnswerMode.GAVE_UP) "" else phase.answer
+                if (retryOf[index] != null) {
+                    answerRetry(phase, card, direction, typed, mode)
+                    return@launch
+                }
                 val result = training.answer(card, direction, typed, wasDue = !practice, mode = mode)
                 lastResult = result
                 if (result.check.isCorrect) correct++
+                progress.add(time.today().toEpochDay())
+                widgets.refresh()
                 val newWordId = result.newWordId
                 // A built-in word that joined «Новые» gets its dictionary card in the background.
                 if (newWordId != null && card.deck != null) viewModelScope.launch { deck.enrich(newWordId, card.term) }
@@ -211,6 +243,8 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 val celebration = celebrationFor(result)
+                // A wrong answer comes back at the end of the session (the box change already happened).
+                if (verdict == Verdict.WRONG || verdict == Verdict.GAVE_UP) queueRetry(card, direction, result, round = 1)
                 // A result only lands on the card it was computed for.
                 if (session.value !== phase) return@launch
                 session.value = TrainingPhase.Feedback(
@@ -238,6 +272,76 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The retry of a word answered wrong: checked, shown, but nothing is written (boxes, mistake count and
+     * review log took the first answer). A wrong retry comes round once more, up to [TrainingSession.MAX_RETRIES].
+     */
+    private suspend fun answerRetry(
+        phase: TrainingPhase.Question,
+        card: TrainingCard,
+        direction: CardDirection,
+        typed: String,
+        mode: AnswerMode,
+    ) {
+        val first = retryOf[index]
+        val drill = training.drill(card, direction, typed, mode)
+        lastResult = first
+        val verdict = when {
+            drill.alsoRight != null -> Verdict.ALSO_RIGHT
+            mode == AnswerMode.GAVE_UP -> Verdict.GAVE_UP
+            else -> when (drill.check) {
+                is CheckResult.Exact -> Verdict.CORRECT
+                is CheckResult.AcceptedWithTypo -> Verdict.TYPO
+                is CheckResult.Wrong -> Verdict.WRONG
+            }
+        }
+        val round = retryRound[index]
+        val again = (verdict == Verdict.WRONG || verdict == Verdict.GAVE_UP) && round < TrainingSession.MAX_RETRIES
+        if (again && first != null) queueRetry(card, direction, first, round + 1)
+        if (session.value !== phase) return
+        session.value = TrainingPhase.Feedback(
+            card = phase.card,
+            position = phase.position,
+            total = phase.total,
+            answer = phase.answer.trim(),
+            verdict = verdict,
+            correctAnswer = when (val check = drill.check) {
+                is CheckResult.AcceptedWithTypo -> check.expected
+                else -> shownAnswer(card, direction)
+            },
+            boxAfter = 1,
+            learned = false,
+            example = card.example,
+            fromDeck = false,
+            hinted = mode == AnswerMode.HINTED,
+            alsoRight = drill.alsoRight,
+            retry = true,
+            retryAgain = again,
+        )
+    }
+
+    private fun queueRetry(card: TrainingCard, direction: CardDirection, first: AnswerResult, round: Int) {
+        if (round > TrainingSession.MAX_RETRIES) return
+        cards += card
+        directions += direction
+        retryOf += first
+        retryRound += round
+    }
+
+    /** The word left training (override, «Я это знаю», «Убрать»): its queued retries go too. */
+    private fun dropRetries(card: TrainingCard) {
+        var i = cards.lastIndex
+        while (i > index) {
+            if (retryOf[i] != null && cards[i].term == card.term) {
+                cards.removeAt(i)
+                directions.removeAt(i)
+                retryOf.removeAt(i)
+                retryRound.removeAt(i)
+            }
+            i--
+        }
+    }
+
     /** «Я знал, это опечатка»: re-scores the wrong answer as correct and undoes its box change. */
     fun overrideAsTypo() {
         val phase = session.value as? TrainingPhase.Feedback ?: return
@@ -248,6 +352,7 @@ class HomeViewModel @Inject constructor(
             try {
                 val transition = training.override(cards[index], result, wasDue = !practice)
                 correct++
+                dropRetries(cards[index])
                 if (session.value !== phase) return@launch
                 session.value = phase.copy(
                     verdict = Verdict.OVERRIDDEN,
@@ -288,8 +393,9 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 action(cards[index], lastResult)
-                // A wrong answer that is undone this way no longer counts against the session.
-                if (phase.verdict == Verdict.WRONG || phase.verdict == Verdict.GAVE_UP) correct++
+                dropRetries(cards[index])
+                // A wrong first answer that is undone this way no longer counts against the session.
+                if (!phase.retry && (phase.verdict == Verdict.WRONG || phase.verdict == Verdict.GAVE_UP)) correct++
                 if (session.value === phase) session.value = phase.copy(removed = true)
             } finally {
                 busy = false
@@ -318,14 +424,22 @@ class HomeViewModel @Inject constructor(
         if (busy || session.value !is TrainingPhase.Feedback) return
         index++
         lastResult = null
-        session.value = if (index < cards.size) question() else TrainingPhase.Done(correct = correct, total = cards.size)
+        session.value = if (index < cards.size) question() else TrainingPhase.Done(
+            correct = correct,
+            total = originalSize,
+            daily = dailyProgress.value,
+        )
     }
 
     fun finish() {
         if (busy) return
         session.value = null
-        cards = emptyList()
+        cards = mutableListOf()
+        directions = mutableListOf()
+        retryOf.clear()
+        retryRound.clear()
         refresh()
+        widgets.refresh()
     }
 
     private fun question(): TrainingPhase.Question {
@@ -339,11 +453,13 @@ class HomeViewModel @Inject constructor(
                 },
                 // IPA would give the answer away when the term is what must be typed.
                 ipa = card.ipa.takeIf { direction == CardDirection.EN_RU },
-                box = card.state.box,
+                // A retried word is in box 1 by now, whatever box the card was made in.
+                box = if (retryOf[index] != null) 1 else card.state.box,
                 expectsEnglish = direction == CardDirection.RU_EN,
             ),
             position = index + 1,
             total = cards.size,
+            retry = retryOf[index] != null,
         )
     }
 
