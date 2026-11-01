@@ -36,7 +36,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -223,21 +225,43 @@ internal fun WeekdayRow(labels: List<String>, mask: Int, onToggle: (Int) -> Unit
     }
 }
 
-/** How the two chosen fonts look together: a word, its transcription and its translation, on a sheet. */
+/**
+ * A list of faces, each row set in its own face with a short name of its character: the picked one is ink
+ * with a paper label, the rest sit on a tone step. The difference between the faces is seen, not read.
+ */
 @Composable
-internal fun FontPreview(word: String, ipa: String, translation: String) {
+internal fun <T> FontList(
+    options: List<T>,
+    selected: T,
+    name: @Composable (T) -> String,
+    sample: String,
+    family: (T) -> FontFamily,
+    sampleSize: TextUnit,
+    onSelect: (T) -> Unit,
+) {
     val colors = LexaTheme.colors
-    val type = LexaTheme.type
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(Corner)
-            .background(colors.sheet)
-            .padding(Spacing.m),
-    ) {
-        Text(word, style = type.word.copy(fontSize = type.word.fontSize * 0.6f, lineHeight = type.word.lineHeight * 0.6f), color = colors.ink)
-        Spacer(Modifier.height(Spacing.xs))
-        Text(ipa, style = type.meta, color = colors.pencil)
-        Text(translation, style = type.title, color = colors.ink)
+    Column(Modifier.fillMaxWidth().selectableGroup(), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        options.forEach { option ->
+            val isSelected = option == selected
+            val ink = if (isSelected) colors.paper else colors.ink
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 64.dp)
+                    .clip(Corner)
+                    .background(if (isSelected) colors.ink else colors.sheet)
+                    .selectable(selected = isSelected, role = Role.RadioButton) { onSelect(option) }
+                    .padding(horizontal = Spacing.m, vertical = Spacing.s),
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    sample,
+                    style = TextStyle(fontFamily = family(option), fontSize = sampleSize, fontWeight = FontWeight(500)),
+                    color = ink,
+                    maxLines = 1,
+                )
+                Text(name(option), style = LexaTheme.type.meta, color = if (isSelected) colors.paper else colors.pencil)
+            }
+        }
     }
 }

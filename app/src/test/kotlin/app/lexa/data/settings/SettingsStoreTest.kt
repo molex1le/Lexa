@@ -31,8 +31,8 @@ class SettingsStoreTest {
         repository.update {
             it.copy(
                 themeMode = ThemeMode.DARK,
-                wordFont = WordFont.LORA,
-                uiFont = UiFont.INTER,
+                wordFont = WordFont.CAVEAT,
+                uiFont = UiFont.NUNITO,
                 textScalePercent = 115,
                 reminderDays = 0b0011111,
                 newWordsPerDay = 0,
@@ -43,8 +43,8 @@ class SettingsStoreTest {
         }
         val read = repository.settings.first()
         assertEquals(ThemeMode.DARK, read.themeMode)
-        assertEquals(WordFont.LORA, read.wordFont)
-        assertEquals(UiFont.INTER, read.uiFont)
+        assertEquals(WordFont.CAVEAT, read.wordFont)
+        assertEquals(UiFont.NUNITO, read.uiFont)
         assertEquals(115, read.textScalePercent)
         assertEquals(0b0011111, read.reminderDays)
         assertEquals(0, read.newWordsPerDay)
@@ -59,6 +59,17 @@ class SettingsStoreTest {
         repository.update { it.copy(themeMode = ThemeMode.LIGHT) }
         assertEquals(35, repository.settings.first().dailyGoal)
         assertEquals(ThemeMode.LIGHT, repository.settings.first().themeMode)
+    }
+
+    @Test fun `a font removed in an update falls back to the default`() = runTest {
+        val dataStore = store("old")
+        dataStore.edit {
+            it[stringPreferencesKey("wordFont")] = "LORA"
+            it[stringPreferencesKey("uiFont")] = "INTER"
+        }
+        val read = DataStoreSettingsRepository(dataStore).settings.first()
+        assertEquals(WordFont.LITERATA, read.wordFont)
+        assertEquals(UiFont.SOURCE_SANS, read.uiFont)
     }
 
     @Test fun `an unknown font name, a wrong text size and weekdays out of range fall back`() = runTest {

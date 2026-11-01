@@ -40,8 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -176,32 +175,34 @@ fun SettingsScreen(
                 onSelect = { mode -> change { it.copy(themeMode = mode) } },
             )
             SettingLabel(stringResource(R.string.settings_word_font_title))
-            Segmented(
+            FontList(
                 WordFont.entries, s.wordFont,
-                label = { when (it) {
-                    WordFont.LITERATA -> "Literata"
-                    WordFont.LORA -> "Lora"
-                    WordFont.SOURCE_SERIF -> "Source Serif"
-                } },
+                name = { stringResource(when (it) {
+                    WordFont.LITERATA -> R.string.font_word_literata
+                    WordFont.PLAYFAIR -> R.string.font_word_playfair
+                    WordFont.ROBOTO_SLAB -> R.string.font_word_slab
+                    WordFont.CAVEAT -> R.string.font_word_caveat
+                    WordFont.MONTSERRAT -> R.string.font_word_montserrat
+                }) },
+                sample = stringResource(R.string.font_word_sample),
+                family = { serif(it, 500, 32f) },
+                sampleSize = 22.sp,
                 onSelect = { font -> change { it.copy(wordFont = font) } },
-                textStyle = { LexaTheme.type.body.copy(fontFamily = serif(it, 500, 20f)) },
             )
             SettingLabel(stringResource(R.string.settings_ui_font_title))
-            Segmented(
+            FontList(
                 UiFont.entries, s.uiFont,
-                label = { when (it) {
-                    UiFont.SOURCE_SANS -> "Source Sans"
-                    UiFont.INTER -> "Inter"
-                    UiFont.SYSTEM -> stringResource(R.string.font_system)
-                } },
+                name = { stringResource(when (it) {
+                    UiFont.SOURCE_SANS -> R.string.font_ui_source_sans
+                    UiFont.NUNITO -> R.string.font_ui_nunito
+                    UiFont.MONTSERRAT -> R.string.font_ui_montserrat
+                    UiFont.LITERATA -> R.string.font_ui_literata
+                    UiFont.SYSTEM -> R.string.font_ui_system
+                }) },
+                sample = stringResource(R.string.font_ui_sample),
+                family = { sans(it) },
+                sampleSize = 18.sp,
                 onSelect = { font -> change { it.copy(uiFont = font) } },
-                textStyle = { LexaTheme.type.body.copy(fontFamily = sans(it)) },
-            )
-            Spacer(Modifier.height(Spacing.m))
-            FontPreview(
-                word = stringResource(R.string.font_preview_word),
-                ipa = stringResource(R.string.font_preview_ipa),
-                translation = stringResource(R.string.font_preview_translation),
             )
             SettingLabel(stringResource(R.string.settings_text_size_title))
             Segmented(

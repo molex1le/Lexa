@@ -29,18 +29,23 @@ private fun variable(resId: Int, weight: Int, vararg extra: FontVariation.Settin
     variationSettings = FontVariation.Settings(FontVariation.weight(weight), *extra),
 )
 
+/** The face of the word and the figures. Only Literata has an optical-size axis; the others take weight alone. */
 internal fun serif(font: WordFont, weight: Int, opticalSize: Float): FontFamily = FontFamily(
     when (font) {
         WordFont.LITERATA -> variable(R.font.literata, weight, FontVariation.Setting("opsz", opticalSize.coerceIn(7f, 72f)))
-        WordFont.SOURCE_SERIF -> variable(R.font.source_serif_4, weight, FontVariation.Setting("opsz", opticalSize.coerceIn(8f, 60f)))
-        // Lora has no optical-size axis, only weight (400..700).
-        WordFont.LORA -> variable(R.font.lora, weight.coerceIn(400, 700))
+        WordFont.PLAYFAIR -> variable(R.font.playfair_display, weight.coerceIn(400, 900))
+        WordFont.ROBOTO_SLAB -> variable(R.font.roboto_slab, weight)
+        WordFont.CAVEAT -> variable(R.font.caveat, weight.coerceIn(400, 700))
+        WordFont.MONTSERRAT -> variable(R.font.montserrat, weight)
     },
 )
 
+/** The face of the interface: three weights each, as the text styles use them. */
 internal fun sans(font: UiFont): FontFamily = when (font) {
     UiFont.SOURCE_SANS -> FontFamily(listOf(400, 500, 600).map { variable(R.font.source_sans_3, it) })
-    UiFont.INTER -> FontFamily(listOf(400, 500, 600).map { variable(R.font.inter, it) })
+    UiFont.NUNITO -> FontFamily(listOf(400, 500, 600).map { variable(R.font.nunito, it) })
+    UiFont.MONTSERRAT -> FontFamily(listOf(400, 500, 600).map { variable(R.font.montserrat, it) })
+    UiFont.LITERATA -> FontFamily(listOf(400, 500, 600).map { variable(R.font.literata, it, FontVariation.Setting("opsz", 14f)) })
     UiFont.SYSTEM -> FontFamily.SansSerif
 }
 
@@ -61,8 +66,13 @@ data class LexaTypography(
     val title: TextStyle,
     /** Text, examples, list rows. 16sp Source Sans 400. */
     val body: TextStyle,
-    /** Captions, IPA, chart axes. 13sp Source Sans 400. */
+    /** Captions, chart axes. 13sp in the interface face, 400. */
     val meta: TextStyle,
+    /**
+     * The transcription. Always Source Sans 3, whatever the interface face is: it carries the whole IPA
+     * set, which most of the other faces do not.
+     */
+    val ipa: TextStyle,
 )
 
 /** The five text styles for the chosen pair of faces. */
@@ -70,7 +80,8 @@ fun lexaTypography(wordFont: WordFont = WordFont.LITERATA, uiFont: UiFont = UiFo
     val display = serif(wordFont, 500, opticalSize = 56f)
     val figures = serif(wordFont, 500, opticalSize = 32f)
     val ui = sans(uiFont)
-    return LexaTypography(
+    val phonetic = sans(UiFont.SOURCE_SANS)
+    val base = LexaTypography(
         word = TextStyle(
             fontFamily = display,
             fontWeight = FontWeight(500),
@@ -116,7 +127,26 @@ fun lexaTypography(wordFont: WordFont = WordFont.LITERATA, uiFont: UiFont = UiFo
             fontFeatureSettings = "tnum",
             lineHeightStyle = Trim,
         ),
+        ipa = TextStyle(
+            fontFamily = phonetic,
+            fontWeight = FontWeight(400),
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+            lineHeightStyle = Trim,
+        ),
     )
+    // Faces that do not set like a book serif at the shared sizes get their own: a hand is small for its
+    // body, so it is set bigger and untracked; a wide geometric sans is tightened.
+    return when (wordFont) {
+        WordFont.CAVEAT -> base.copy(
+            word = base.word.copy(fontSize = 68.sp, lineHeight = 66.sp, letterSpacing = 0.em, fontWeight = FontWeight(600)),
+            figure = base.figure.copy(fontSize = 40.sp, lineHeight = 42.sp, fontWeight = FontWeight(600)),
+        )
+        WordFont.MONTSERRAT -> base.copy(
+            word = base.word.copy(fontSize = 50.sp, lineHeight = 58.sp, letterSpacing = (-0.03).em),
+        )
+        else -> base
+    }
 }
 
 val DefaultLexaTypography = lexaTypography()

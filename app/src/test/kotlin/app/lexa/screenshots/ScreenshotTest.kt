@@ -379,15 +379,15 @@ class ScreenshotTest(private val dark: Boolean) {
     }
 
     @Test fun settings() = snap("settings") {
-        SettingsScreen(SettingsUiState(appVersion = "0.6.0"), onBack = {})
+        SettingsScreen(SettingsUiState(appVersion = "0.6.1"), onBack = {})
     }
 
     @Test fun settingsLarge() = large("settings") {
-        SettingsScreen(SettingsUiState(Settings(reminderEnabled = true), appVersion = "0.6.0"), onBack = {})
+        SettingsScreen(SettingsUiState(Settings(reminderEnabled = true), appVersion = "0.6.1"), onBack = {})
     }
 
     @Test fun settingsReminderOn() = snap("settings_reminder") {
-        SettingsScreen(SettingsUiState(Settings(reminderEnabled = true), appVersion = "0.6.0"), onBack = {})
+        SettingsScreen(SettingsUiState(Settings(reminderEnabled = true), appVersion = "0.6.1"), onBack = {})
     }
 
     /** The sheet as it floats over the calling app: scrim above, the sheet body at the bottom. */
@@ -491,7 +491,7 @@ class ScreenshotTest(private val dark: Boolean) {
                     reminderEnabled = true, vocabLevel = app.lexa.domain.model.VocabLevel.B1, dailyGoal = 35,
                     reminderDays = 0b0011111, newWordsPerDay = 0,
                 ),
-                appVersion = "0.6.0",
+                appVersion = "0.6.1",
             ),
             onBack = {},
             updateStatus = app.lexa.ui.settings.UpdateStatus.UP_TO_DATE,
@@ -503,10 +503,15 @@ class ScreenshotTest(private val dark: Boolean) {
             LexaTheme(darkTheme = dark, wordFont = word, uiFont = ui) { TypeSpecimen() }
         }
 
-    @Test fun fontsLoraInter() = fonts("fonts_lora_inter", app.lexa.domain.model.WordFont.LORA, app.lexa.domain.model.UiFont.INTER)
+    /** The card in each of the five word faces, so the difference between them can be judged by eye. */
+    @Test fun fontsEveryWordFace() = app.lexa.domain.model.WordFont.entries.forEach {
+        fonts("fonts_word_${it.name.lowercase()}", it, app.lexa.domain.model.UiFont.SOURCE_SANS)
+    }
 
-    @Test fun fontsSourceSerifSystem() =
-        fonts("fonts_sourceserif_system", app.lexa.domain.model.WordFont.SOURCE_SERIF, app.lexa.domain.model.UiFont.SYSTEM)
+    /** The same card in each interface face, with the default word face. */
+    @Test fun fontsEveryInterfaceFace() = app.lexa.domain.model.UiFont.entries.forEach {
+        fonts("fonts_ui_${it.name.lowercase()}", app.lexa.domain.model.WordFont.LITERATA, it)
+    }
 
     /** The same training card at 90 % and 130 % of the text size, to see the scale hold. */
     @Test fun textScale130() = captureRoboImage("src/test/snapshots/text_scale130_$suffix.png") {

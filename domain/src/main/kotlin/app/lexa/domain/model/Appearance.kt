@@ -13,11 +13,17 @@ enum class ThemeMode {
     }
 }
 
-/** The face of the word on a card and of the figures. All three have Cyrillic. */
-enum class WordFont { LITERATA, LORA, SOURCE_SERIF }
+/**
+ * The face of the word on a card and of the figures: five different characters, all with Cyrillic.
+ * A text serif, a high-contrast display serif, a slab, a hand with a marker, a geometric sans.
+ */
+enum class WordFont { LITERATA, PLAYFAIR, ROBOTO_SLAB, CAVEAT, MONTSERRAT }
 
-/** The face of everything else, transcription included, so all three have the full IPA set (SYSTEM: the phone's). */
-enum class UiFont { SOURCE_SANS, INTER, SYSTEM }
+/**
+ * The face of everything else: a humanist sans, a rounded sans, a geometric sans, a text serif, or the phone's own.
+ * Only faces drawn for reading text sizes; the transcription keeps its own face whatever is picked.
+ */
+enum class UiFont { SOURCE_SANS, NUNITO, MONTSERRAT, LITERATA, SYSTEM }
 
 /** Weekdays as a bit mask: Monday is bit 0, Sunday bit 6. The reminder fires only on the chosen days. */
 object ReminderDays {

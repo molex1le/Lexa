@@ -272,10 +272,6 @@
     <string name="theme_dark">Тёмная</string>
     <string name="settings_word_font_title">Шрифт слов</string>
     <string name="settings_ui_font_title">Шрифт интерфейса</string>
-    <string name="font_system">Системный</string>
-    <string name="font_preview_word">thoughtful</string>
-    <string name="font_preview_ipa">/ˈθɔːtfəl/</string>
-    <string name="font_preview_translation">вдумчивый</string>
     <string name="settings_text_size_title">Размер текста</string>
     <string name="text_size_percent">%1$d&#160;%%</string>
     <string name="settings_text_size_hint">Поверх размера шрифта в настройках телефона</string>
@@ -313,4 +309,16 @@
         <item>Сб</item>
         <item>Вс</item>
     </string-array>
+    <string name="font_word_sample">Thoughtful, вдумчивый</string>
+    <string name="font_word_literata">Literata&#160;– книжная антиква</string>
+    <string name="font_word_playfair">Playfair Display&#160;– контрастная журнальная антиква</string>
+    <string name="font_word_slab">Roboto Slab&#160;– брусковая, с жирными засечками</string>
+    <string name="font_word_caveat">Caveat&#160;– от руки, как маркером</string>
+    <string name="font_word_montserrat">Montserrat&#160;– геометрический гротеск</string>
+    <string name="font_ui_sample">Повторить сегодня: 12 слов</string>
+    <string name="font_ui_source_sans">Source Sans&#160;– спокойный гуманистический</string>
+    <string name="font_ui_nunito">Nunito&#160;– округлый, дружелюбный</string>
+    <string name="font_ui_montserrat">Montserrat&#160;– широкий геометрический</string>
+    <string name="font_ui_literata">Literata&#160;– с засечками, как в книге</string>
+    <string name="font_ui_system">Системный&#160;– как в остальных приложениях</string>
 </resources>

@@ -211,7 +211,7 @@ private fun CardFace(
         if (card.ipa != null || onSpeak != null) {
             Spacer(Modifier.height(Spacing.s))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                card.ipa?.let { Text(it, style = type.meta, color = colors.pencil) }
+                card.ipa?.let { Text(it, style = type.ipa, color = colors.pencil) }
                 if (onSpeak != null) {
                     if (card.ipa != null) Spacer(Modifier.width(Spacing.s))
                     LexaIconButton(R.drawable.ic_sound, stringResource(R.string.action_pronounce), onSpeak)

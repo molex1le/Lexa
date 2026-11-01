@@ -308,7 +308,7 @@ internal fun TranslationResult(
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         t.ipa?.let { ipa ->
-            Text(ipa, style = type.meta, color = colors.pencil)
+            Text(ipa, style = type.ipa, color = colors.pencil)
         }
         LexaIconButton(R.drawable.ic_sound, stringResource(R.string.action_pronounce), onPronounce)
     }

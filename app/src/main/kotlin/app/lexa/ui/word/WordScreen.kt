@@ -125,7 +125,7 @@ fun WordScreen(state: WordUiState, actions: WordActions = WordActions(), modifie
                             .semantics { heading() },
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        entry.ipa?.let { Text(it, style = type.meta, color = colors.pencil) }
+                        entry.ipa?.let { Text(it, style = type.ipa, color = colors.pencil) }
                         LexaIconButton(R.drawable.ic_sound, stringResource(R.string.action_pronounce), actions.onPronounce)
                     }
                     if (entry.senses.isEmpty() && word.translation.isNotEmpty()) {
